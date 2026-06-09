@@ -56,9 +56,20 @@ bool M5StickS3Power::init_pmic_() {
 }
 
 bool M5StickS3Power::configure_audio_amp_() {
-  const m5pm1_err_t err =
-      this->pm1_.setAw8737aPulse(M5PM1_GPIO_NUM_3, M5PM1_AW8737A_PULSE_2, M5PM1_AW8737A_REFRESH_NOW);
-  return err == M5PM1_OK;
+  if (this->pm1_.gpioSetFunc(M5PM1_GPIO_NUM_3, M5PM1_GPIO_FUNC_GPIO) != M5PM1_OK) {
+    return false;
+  }
+  if (this->pm1_.gpioSetMode(M5PM1_GPIO_NUM_3, M5PM1_GPIO_MODE_OUTPUT) != M5PM1_OK) {
+    return false;
+  }
+  if (this->pm1_.gpioSetDrive(M5PM1_GPIO_NUM_3, M5PM1_GPIO_DRIVE_PUSHPULL) != M5PM1_OK) {
+    return false;
+  }
+  if (this->pm1_.gpioSetOutput(M5PM1_GPIO_NUM_3, true) != M5PM1_OK) {
+    return false;
+  }
+  ESP_LOGI(TAG, "Speaker amplifier enabled");
+  return true;
 }
 
 bool M5StickS3Power::write_es8311_byte_(uint8_t reg, uint8_t value) {
