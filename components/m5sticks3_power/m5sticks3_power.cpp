@@ -4,62 +4,76 @@
 namespace esphome {
 namespace m5sticks3_power {
 
-bool M5StickS3Power::init_pmic_() {
-  Wire.begin(this->sda_pin_, this->scl_pin_, 100000U);
-  delay(20);
+static constexpr uint8_t M5PM1_REG_PWR_SRC = 0x04;
+static constexpr uint8_t M5PM1_REG_PWR_CFG = 0x06;
+static constexpr uint8_t M5PM1_REG_GPIO_MODE = 0x10;
+static constexpr uint8_t M5PM1_REG_GPIO_OUT = 0x11;
+static constexpr uint8_t M5PM1_REG_GPIO_DRV = 0x13;
+static constexpr uint8_t M5PM1_REG_GPIO_FUNC0 = 0x16;
+static constexpr uint8_t M5PM1_REG_VBAT_L = 0x22;
+static constexpr uint8_t M5PM1_REG_VIN_L = 0x24;
+static constexpr uint8_t M5PM1_REG_5VINOUT_L = 0x26;
 
-  const m5pm1_err_t err = this->pm1_.begin(&Wire, this->address_, this->sda_pin_, this->scl_pin_, 100000U);
-  if (err != M5PM1_OK) {
-    ESP_LOGE(TAG, "PMIC init failed: %d", err);
+static constexpr uint8_t M5PM1_PWR_CFG_CHG_EN = 1 << 0;
+static constexpr uint8_t M5PM1_PWR_CFG_DCDC_EN = 1 << 1;
+static constexpr uint8_t M5PM1_PWR_CFG_LDO_EN = 1 << 2;
+static constexpr uint8_t M5PM1_PWR_CFG_BOOST_EN = 1 << 3;
+static constexpr uint8_t M5PM1_PWR_SRC_BAT = 2;
+static constexpr uint8_t M5PM1_PWR_SRC_UNKNOWN = 3;
+static constexpr uint8_t M5PM1_GPIO2_MASK = 1 << 2;
+
+bool M5StickS3Power::init_pmic_() {
+  uint8_t power_config = 0;
+  if (!this->read_byte(M5PM1_REG_PWR_CFG, &power_config)) {
+    ESP_LOGE(TAG, "PMIC init failed: cannot read power config");
     this->pmic_ready_ = false;
     return false;
   }
 
-  this->pm1_.setAutoWakeEnable(true);
-  this->pm1_.setDcdcEnable(true);
-  delay(20);
-  this->pm1_.setLdoEnable(true);
-  delay(20);
-  this->pm1_.setChargeEnable(true);
-  delay(20);
-  this->pm1_.setBoostEnable(true);
+  if (!this->write_byte(M5PM1_REG_PWR_CFG, power_config | M5PM1_PWR_CFG_CHG_EN | M5PM1_PWR_CFG_DCDC_EN |
+                                                 M5PM1_PWR_CFG_LDO_EN | M5PM1_PWR_CFG_BOOST_EN)) {
+    ESP_LOGE(TAG, "PMIC init failed: cannot enable power rails");
+    this->pmic_ready_ = false;
+    return false;
+  }
   this->boost_enabled_ = true;
-  delay(20);
 
-  this->pm1_.gpioSetFunc(M5PM1_GPIO_NUM_2, M5PM1_GPIO_FUNC_GPIO);
-  this->pm1_.gpioSetMode(M5PM1_GPIO_NUM_2, M5PM1_GPIO_MODE_OUTPUT);
-  this->pm1_.gpioSetDrive(M5PM1_GPIO_NUM_2, M5PM1_GPIO_DRIVE_PUSHPULL);
-  this->pm1_.gpioSetOutput(M5PM1_GPIO_NUM_2, false);
-  delay(100);
+  // PYG2_L3B_EN controls the LCD/audio rail on StickS3. GPIO mode, push-pull, low = enabled.
+  this->update_bits_(M5PM1_REG_GPIO_FUNC0, 0b00110000, 0);
+  this->update_bits_(M5PM1_REG_GPIO_MODE, M5PM1_GPIO2_MASK, M5PM1_GPIO2_MASK);
+  this->update_bits_(M5PM1_REG_GPIO_DRV, M5PM1_GPIO2_MASK, 0);
+  this->update_bits_(M5PM1_REG_GPIO_OUT, M5PM1_GPIO2_MASK, 0);
 
   this->pmic_ready_ = true;
   ESP_LOGI(TAG, "PMIC init complete");
   return true;
 }
 
-bool M5StickS3Power::resync_pmic_() {
-  Wire.end();
-  delay(20);
-  Wire.begin(this->sda_pin_, this->scl_pin_, 100000U);
-  delay(20);
-
-  const m5pm1_err_t err = this->pm1_.begin(&Wire, this->address_, this->sda_pin_, this->scl_pin_, 100000U);
-  if (err != M5PM1_OK) {
-    ESP_LOGW(TAG, "PMIC re-init failed: %d", err);
-    this->pmic_ready_ = false;
+bool M5StickS3Power::read_voltage_(uint8_t low_reg, uint16_t *mv) {
+  uint8_t data[2] = {0, 0};
+  if (!this->read_bytes(low_reg, data, 2)) {
     return false;
   }
-
-  this->pmic_ready_ = true;
-  delay(50);
+  *mv = data[0] | ((data[1] & 0x0F) << 8);
   return true;
 }
 
-bool M5StickS3Power::read_voltage_twice_(m5pm1_err_t (M5PM1::*reader)(uint16_t *), uint16_t *mv) {
-  (this->pm1_.*reader)(mv);
-  delay(20);
-  const m5pm1_err_t err = (this->pm1_.*reader)(mv);
-  return err == M5PM1_OK;
+bool M5StickS3Power::read_power_source_(uint8_t *source) {
+  uint8_t raw = 0;
+  if (!this->read_byte(M5PM1_REG_PWR_SRC, &raw)) {
+    return false;
+  }
+  *source = raw & 0x07;
+  return true;
+}
+
+bool M5StickS3Power::update_bits_(uint8_t reg, uint8_t mask, uint8_t value) {
+  uint8_t raw = 0;
+  if (!this->read_byte(reg, &raw)) {
+    return false;
+  }
+  raw = (raw & ~mask) | (value & mask);
+  return this->write_byte(reg, raw);
 }
 
 float M5StickS3Power::estimate_battery_level_(uint16_t battery_mv) {
@@ -78,7 +92,7 @@ void M5StickS3Power::setup() {
 }
 
 void M5StickS3Power::update() {
-  if (!this->resync_pmic_()) {
+  if (!this->pmic_ready_ && !this->init_pmic_()) {
     ESP_LOGW(TAG, "Skipping PMIC sensor update");
     return;
   }
@@ -88,7 +102,7 @@ void M5StickS3Power::update() {
   uint16_t five_volt_mv = 0;
   bool input_valid = false;
 
-  if (this->read_voltage_twice_(&M5PM1::readVbat, &battery_mv)) {
+  if (this->read_voltage_(M5PM1_REG_VBAT_L, &battery_mv)) {
     if (this->battery_voltage_sensor_ != nullptr) {
       this->battery_voltage_sensor_->publish_state(battery_mv / 1000.0f);
     }
@@ -99,7 +113,7 @@ void M5StickS3Power::update() {
     ESP_LOGW(TAG, "readVbat failed");
   }
 
-  if (this->read_voltage_twice_(&M5PM1::readVin, &input_mv)) {
+  if (this->read_voltage_(M5PM1_REG_VIN_L, &input_mv)) {
     input_valid = true;
     if (this->input_voltage_sensor_ != nullptr) {
       this->input_voltage_sensor_->publish_state(input_mv / 1000.0f);
@@ -108,7 +122,7 @@ void M5StickS3Power::update() {
     ESP_LOGW(TAG, "readVin failed");
   }
 
-  if (this->read_voltage_twice_(&M5PM1::read5VInOut, &five_volt_mv)) {
+  if (this->read_voltage_(M5PM1_REG_5VINOUT_L, &five_volt_mv)) {
     if (this->five_volt_voltage_sensor_ != nullptr) {
       this->five_volt_voltage_sensor_->publish_state(five_volt_mv / 1000.0f);
     }
@@ -117,8 +131,8 @@ void M5StickS3Power::update() {
   }
 
   if (this->charging_binary_sensor_ != nullptr) {
-    m5pm1_pwr_src_t power_source = M5PM1_PWR_SRC_UNKNOWN;
-    const bool source_valid = this->pm1_.getPowerSource(&power_source) == M5PM1_OK;
+    uint8_t power_source = M5PM1_PWR_SRC_UNKNOWN;
+    const bool source_valid = this->read_power_source_(&power_source);
     const bool charging = (source_valid && power_source != M5PM1_PWR_SRC_BAT && power_source != M5PM1_PWR_SRC_UNKNOWN) ||
                           (input_valid && input_mv >= 4500);
     this->charging_binary_sensor_->publish_state(charging);
@@ -128,13 +142,12 @@ void M5StickS3Power::update() {
 }
 
 void M5StickS3Power::set_ext_5v(bool state) {
-  if (!this->resync_pmic_()) {
+  if (!this->pmic_ready_ && !this->init_pmic_()) {
     return;
   }
 
-  const m5pm1_err_t err = this->pm1_.setBoostEnable(state);
-  if (err != M5PM1_OK) {
-    ESP_LOGW(TAG, "setBoostEnable(%s) failed: %d", state ? "true" : "false", err);
+  if (!this->update_bits_(M5PM1_REG_PWR_CFG, M5PM1_PWR_CFG_BOOST_EN, state ? M5PM1_PWR_CFG_BOOST_EN : 0)) {
+    ESP_LOGW(TAG, "set boost enable failed");
     return;
   }
 

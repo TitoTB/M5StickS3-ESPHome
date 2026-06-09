@@ -16,7 +16,6 @@ esphome:
   libraries:
     - Wire
     - SPI
-    - M5PM1=git+https://github.com/m5stack/M5PM1.git#1.0.6
     - m5stack/M5Unified@^0.2.7
     - m5stack/M5GFX@^0.2.16
   platformio_options:
@@ -160,8 +159,8 @@ display:
 
 m5sticks3_power:
   id: stick_power
-  sda: 47
-  scl: 48
+  i2c_id: internal_i2c
+  address: 0x6E
   update_interval: 30s
   battery_level:
     id: battery_level

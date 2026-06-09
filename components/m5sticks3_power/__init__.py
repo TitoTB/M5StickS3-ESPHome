@@ -1,8 +1,9 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import binary_sensor, sensor, switch
+from esphome.components import binary_sensor, i2c, sensor, switch
 from esphome.const import (
     CONF_ID,
+    CONF_ADDRESS,
     DEVICE_CLASS_BATTERY,
     DEVICE_CLASS_VOLTAGE,
     ENTITY_CATEGORY_DIAGNOSTIC,
@@ -12,16 +13,14 @@ from esphome.const import (
 )
 
 DEPENDENCIES = ["esp32"]
-AUTO_LOAD = ["binary_sensor", "sensor", "switch"]
+AUTO_LOAD = ["binary_sensor", "i2c", "sensor", "switch"]
 
 m5sticks3_power_ns = cg.esphome_ns.namespace("m5sticks3_power")
-M5StickS3Power = m5sticks3_power_ns.class_("M5StickS3Power", cg.PollingComponent)
+M5StickS3Power = m5sticks3_power_ns.class_("M5StickS3Power", cg.PollingComponent, i2c.I2CDevice)
 M5StickS3Ext5VSwitch = m5sticks3_power_ns.class_(
     "M5StickS3Ext5VSwitch", switch.Switch, cg.Component
 )
 
-CONF_SDA = "sda"
-CONF_SCL = "scl"
 CONF_BATTERY_LEVEL = "battery_level"
 CONF_BATTERY_VOLTAGE = "battery_voltage"
 CONF_INPUT_VOLTAGE = "input_voltage"
@@ -32,8 +31,7 @@ CONF_EXT_5V = "ext_5v"
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(M5StickS3Power),
-        cv.Optional(CONF_SDA, default=47): cv.int_range(min=0, max=48),
-        cv.Optional(CONF_SCL, default=48): cv.int_range(min=0, max=48),
+        cv.Optional(CONF_ADDRESS, default=0x6E): cv.hex_int,
         cv.Optional(CONF_BATTERY_LEVEL): sensor.sensor_schema(
             unit_of_measurement=UNIT_PERCENT,
             icon="mdi:battery",
@@ -72,14 +70,13 @@ CONFIG_SCHEMA = cv.Schema(
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
         ),
     }
-).extend(cv.polling_component_schema("30s"))
+).extend(cv.polling_component_schema("30s")).extend(i2c.i2c_device_schema(0x6E))
 
 
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
-
-    cg.add(var.set_i2c_pins(config[CONF_SDA], config[CONF_SCL]))
+    await i2c.register_i2c_device(var, config)
 
     if battery_level_config := config.get(CONF_BATTERY_LEVEL):
         sens = await sensor.new_sensor(battery_level_config)

@@ -2,10 +2,9 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
+#include "esphome/components/i2c/i2c.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/switch/switch.h"
-#include <M5PM1.h>
-#include <Wire.h>
 
 namespace esphome {
 namespace m5sticks3_power {
@@ -21,12 +20,8 @@ class M5StickS3Ext5VSwitch : public switch_::Switch, public Component {
   M5StickS3Power *parent_{nullptr};
 };
 
-class M5StickS3Power : public PollingComponent {
+class M5StickS3Power : public PollingComponent, public i2c::I2CDevice {
  public:
-  void set_i2c_pins(int sda, int scl) {
-    this->sda_pin_ = sda;
-    this->scl_pin_ = scl;
-  }
   void set_battery_level_sensor(sensor::Sensor *sensor) { this->battery_level_sensor_ = sensor; }
   void set_battery_voltage_sensor(sensor::Sensor *sensor) { this->battery_voltage_sensor_ = sensor; }
   void set_input_voltage_sensor(sensor::Sensor *sensor) { this->input_voltage_sensor_ = sensor; }
@@ -43,17 +38,14 @@ class M5StickS3Power : public PollingComponent {
 
  protected:
   bool init_pmic_();
-  bool resync_pmic_();
   void publish_ext_5v_state_();
   float estimate_battery_level_(uint16_t battery_mv);
-  bool read_voltage_twice_(m5pm1_err_t (M5PM1::*reader)(uint16_t *), uint16_t *mv);
+  bool read_voltage_(uint8_t low_reg, uint16_t *mv);
+  bool read_power_source_(uint8_t *source);
+  bool update_bits_(uint8_t reg, uint8_t mask, uint8_t value);
 
-  int sda_pin_{47};
-  int scl_pin_{48};
-  uint8_t address_{0x6E};
   bool pmic_ready_{false};
   bool boost_enabled_{false};
-  M5PM1 pm1_;
 
   sensor::Sensor *battery_level_sensor_{nullptr};
   sensor::Sensor *battery_voltage_sensor_{nullptr};
