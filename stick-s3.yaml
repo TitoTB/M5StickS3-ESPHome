@@ -70,8 +70,7 @@ external_components:
   - source:
       type: git
       url: https://github.com/TitoTB/M5StickS3-ESPHome.git
-      # Temporal durante el desarrollo: volver a main cuando la base compile estable.
-      ref: 739352b88b9683da9d39b53b434e1b9a427d1117
+      ref: main
       path: components
     components:
       - m5sticks3_display
