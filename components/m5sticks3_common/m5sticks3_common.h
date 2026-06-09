@@ -14,6 +14,7 @@ inline void ensure_m5sticks3_begin(int sda, int scl) {
 
   auto config = M5.config();
   config.serial_baudrate = 0;
+  config.clear_display = false;
   config.internal_imu = true;
   config.internal_rtc = false;
   config.output_power = true;

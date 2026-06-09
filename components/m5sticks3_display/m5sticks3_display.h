@@ -7,46 +7,29 @@
 namespace esphome {
 namespace m5sticks3_display {
 
-class M5StickS3Display : public PollingComponent, public display::DisplayBuffer {
+class M5StickS3Display : public display::DisplayBuffer {
  public:
   void set_i2c_pins(int sda, int scl) {
     this->sda_pin_ = sda;
     this->scl_pin_ = scl;
   }
 
-  void setup() override {
-    m5sticks3_common::ensure_m5sticks3_begin(this->sda_pin_, this->scl_pin_);
+  void setup() override;
+  void update() override;
+  void dump_config() override;
+  float get_setup_priority() const override { return setup_priority::PROCESSOR; }
 
-    M5.Display.setRotation(1);
-    M5.Display.setBrightness(96);
-    M5.Display.fillScreen(TFT_BLACK);
-  }
-
-  void update() override {
-    this->do_update_();
-  }
-
-  float get_setup_priority() const override { return setup_priority::HARDWARE; }
-
-  void dump_config() override {
-    ESP_LOGCONFIG(TAG, "M5StickS3 Display");
-    ESP_LOGCONFIG(TAG, "  Size: %ux%u", this->get_width_internal(), this->get_height_internal());
-  }
+  display::DisplayType get_display_type() override { return display::DisplayType::DISPLAY_TYPE_COLOR; }
 
  protected:
-  int get_width_internal() override { return 240; }
-  int get_height_internal() override { return 135; }
-
-  void draw_absolute_pixel_internal(int x, int y, Color color) override {
-    if (x < 0 || y < 0 || x >= this->get_width_internal() || y >= this->get_height_internal()) {
-      return;
-    }
-    M5.Display.drawPixel(x, y, color.to_rgb_565());
-  }
+  int get_width_internal() override;
+  int get_height_internal() override;
+  void draw_absolute_pixel_internal(int x, int y, Color color) override;
 
   int sda_pin_{47};
   int scl_pin_{48};
-  static constexpr const char *TAG = "m5sticks3_display";
+  bool initialized_{false};
+  M5Canvas canvas_{&M5.Display};
 };
 
 }  // namespace m5sticks3_display
