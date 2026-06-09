@@ -11,10 +11,10 @@ Esta v1 incluye:
 - Bateria, voltaje, corriente de bateria, estado de carga y salida EXT 5V.
 - Boton azul y boton lateral.
 - Retroiluminacion de pantalla.
-- Emisor y receptor IR.
 - Diagnostico Wi-Fi, uptime, IP, SSID y MAC.
 
 Audio, reproductor multimedia y asistente de voz quedan fuera de esta v1 para mantener una base segura.
+IR queda fuera de esta v1 para evitar ruido de recepcion y mantener la configuracion estable.
 
 ## Uso
 
@@ -29,7 +29,3 @@ wifi_password: "..."
 3. Reemplaza en `stick-s3.yaml` los placeholders de `api.encryption.key`, `ota.password` y `wifi.ap.password` por los valores que te genere ESPHome.
 
 Nota temporal: `external_components.refresh` esta en `0s` durante el desarrollo para forzar que ESPHome descargue una copia fresca del repositorio. Cuando la base compile estable, conviene volver a `refresh: 1days`.
-
-## Nota sobre IR
-
-La documentacion oficial de M5Stack indica que la recepcion IR debe usar RMT y que, cuando el amplificador de altavoz este activo, puede ser necesario apagarlo para recibir IR correctamente. La v1 no activa audio, asi que no deberia interferir.

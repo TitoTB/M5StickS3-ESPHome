@@ -67,12 +67,6 @@ captive_portal:
 web_server:
   port: 80
 
-globals:
-  - id: ir_capture_enabled
-    type: bool
-    restore_value: no
-    initial_value: 'false'
-
 external_components:
   - source:
       type: git
@@ -102,22 +96,6 @@ light:
     output: lcd_backlight_raw
     restore_mode: ALWAYS_ON
     default_transition_length: 0s
-
-switch:
-  - platform: template
-    id: ir_capture_switch
-    name: "Captura IR"
-    icon: "mdi:remote"
-    optimistic: true
-    restore_mode: RESTORE_DEFAULT_OFF
-    turn_on_action:
-      - lambda: |-
-          id(ir_capture_enabled) = true;
-      - logger.log: "Captura IR activada"
-    turn_off_action:
-      - lambda: |-
-          id(ir_capture_enabled) = false;
-      - logger.log: "Captura IR desactivada"
 
 font:
   - file: "gfonts://Roboto"
@@ -248,28 +226,3 @@ button:
 
   - platform: safe_mode
     name: "Reiniciar en modo seguro"
-
-remote_transmitter:
-  id: ir_tx
-  pin: GPIO46
-  carrier_duty_percent: 50%
-  non_blocking: true
-
-remote_receiver:
-  id: ir_rx
-  pin:
-    number: GPIO42
-    inverted: true
-    mode:
-      input: true
-  on_pronto:
-    then:
-      - if:
-          condition:
-            lambda: |-
-              return id(ir_capture_enabled);
-          then:
-            - logger.log:
-                level: INFO
-                format: "IR Pronto: %s"
-                args: [x.c_str()]
