@@ -75,7 +75,8 @@ external_components:
     components:
       - m5sticks3_display
       - m5sticks3_power
-    refresh: 1days
+    # Temporal durante el desarrollo: volver a 1days cuando la base compile estable.
+    refresh: 0s
 
 time:
   - platform: homeassistant
@@ -151,8 +152,8 @@ display:
 
 m5sticks3_power:
   id: stick_power
-  sda: GPIO47
-  scl: GPIO48
+  sda: 47
+  scl: 48
   update_interval: 30s
   battery_level:
     id: battery_level

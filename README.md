@@ -28,6 +28,8 @@ wifi_password: "..."
 
 3. Reemplaza en `stick-s3.yaml` los placeholders de `api.encryption.key`, `ota.password` y `wifi.ap.password` por los valores que te genere ESPHome.
 
+Nota temporal: `external_components.refresh` esta en `0s` durante el desarrollo para forzar que ESPHome descargue siempre la ultima version del repositorio. Cuando la base compile estable, conviene cambiarlo a `1days`.
+
 ## Nota sobre IR
 
 La documentacion oficial de M5Stack indica que la recepcion IR debe usar RMT y que, cuando el amplificador de altavoz este activo, puede ser necesario apagarlo para recibir IR correctamente. La v1 no activa audio, asi que no deberia interferir.
