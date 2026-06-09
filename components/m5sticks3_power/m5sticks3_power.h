@@ -2,7 +2,6 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
-#include "esphome/components/i2c/i2c.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/switch/switch.h"
 #include <M5PM1.h>
@@ -22,7 +21,7 @@ class M5StickS3Ext5VSwitch : public switch_::Switch, public Component {
   M5StickS3Power *parent_{nullptr};
 };
 
-class M5StickS3Power : public PollingComponent, public i2c::I2CDevice {
+class M5StickS3Power : public PollingComponent {
  public:
   void set_battery_level_sensor(sensor::Sensor *sensor) { this->battery_level_sensor_ = sensor; }
   void set_battery_voltage_sensor(sensor::Sensor *sensor) { this->battery_voltage_sensor_ = sensor; }
@@ -40,12 +39,8 @@ class M5StickS3Power : public PollingComponent, public i2c::I2CDevice {
 
  protected:
   bool init_pmic_();
-  bool init_pmic_with_library_();
   void publish_ext_5v_state_();
   float estimate_battery_level_(uint16_t battery_mv);
-  bool read_voltage_(uint8_t low_reg, uint16_t *mv);
-  bool read_power_source_(uint8_t *source);
-  bool update_bits_(uint8_t reg, uint8_t mask, uint8_t value);
   bool configure_audio_amp_();
 
   bool pmic_ready_{false};

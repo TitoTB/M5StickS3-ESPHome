@@ -67,13 +67,6 @@ captive_portal:
 web_server:
   port: 80
 
-i2c:
-  - id: internal_i2c
-    sda: GPIO47
-    scl: GPIO48
-    scan: true
-    frequency: 100kHz
-
 external_components:
   - source:
       type: git
@@ -142,11 +135,7 @@ display:
 
       it.print(120, 96, id(font_medium), id(color_green), TextAlign::CENTER, "Hola Home Assistant");
 
-      if (!isnan(id(battery_level).state)) {
-        it.printf(120, 126, id(font_medium), id(color_white), TextAlign::CENTER, "Bateria %.0f%%", id(battery_level).state);
-      } else {
-        it.print(120, 126, id(font_medium), id(color_gray), TextAlign::CENTER, "Bateria --%");
-      }
+      it.print(120, 126, id(font_medium), id(color_gray), TextAlign::CENTER, "Altavoz listo");
 
       if (id(api_status).state) {
         it.print(8, 6, id(font_small), id(color_green), TextAlign::TOP_LEFT, "HA");
@@ -160,23 +149,7 @@ display:
 
 m5sticks3_power:
   id: stick_power
-  i2c_id: internal_i2c
-  address: 0x6E
-  update_interval: 30s
-  battery_level:
-    id: battery_level
-    name: "Bateria"
-  battery_voltage:
-    name: "Voltaje bateria"
-  input_voltage:
-    name: "Voltaje entrada USB"
-  five_volt_voltage:
-    name: "Voltaje rail 5V"
-  charging:
-    name: "Cargando"
-  ext_5v:
-    name: "Salida EXT 5V"
-    restore_mode: RESTORE_DEFAULT_OFF
+  update_interval: 5min
 
 binary_sensor:
   - platform: gpio
@@ -234,29 +207,6 @@ button:
   - platform: safe_mode
     name: "Reiniciar en modo seguro"
 
-  - platform: template
-    name: "Iniciar asistente de voz"
-    icon: "mdi:microphone"
-    on_press:
-      - voice_assistant.start_continuous:
-
-  - platform: template
-    name: "Detener asistente de voz"
-    icon: "mdi:microphone-off"
-    on_press:
-      - voice_assistant.stop:
-
-audio_dac:
-  - platform: es8311
-    id: es8311_dac
-    i2c_id: internal_i2c
-    address: 0x18
-    bits_per_sample: 16bit
-    sample_rate: 16000
-    use_mclk: true
-    use_microphone: true
-    mic_gain: 30DB
-
 i2s_audio:
   - id: i2s_bus
     i2s_mclk_pin: GPIO18
@@ -268,22 +218,11 @@ speaker:
     id: internal_speaker
     i2s_audio_id: i2s_bus
     dac_type: external
-    audio_dac: es8311_dac
     i2s_dout_pin: GPIO16
     sample_rate: 16000
     bits_per_sample: 16bit
     channel: mono
     timeout: never
-
-microphone:
-  - platform: i2s_audio
-    id: internal_microphone
-    i2s_audio_id: i2s_bus
-    adc_type: external
-    i2s_din_pin: GPIO14
-    sample_rate: 16000
-    bits_per_sample: 16bit
-    channel: left
 
 media_player:
   - platform: speaker
@@ -297,18 +236,3 @@ media_player:
     buffer_size: 200000
     volume_initial: 50%
     volume_max: 75%
-
-voice_assistant:
-  id: va
-  microphone:
-    microphone: internal_microphone
-    channels: 0
-    gain_factor: 2
-  media_player: stick_media_player
-  noise_suppression_level: 2
-  auto_gain: 20dBFS
-  volume_multiplier: 1.5
-  on_start:
-    - logger.log: "Asistente de voz iniciado"
-  on_end:
-    - logger.log: "Asistente de voz finalizado"
