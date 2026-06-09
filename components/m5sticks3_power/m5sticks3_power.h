@@ -4,7 +4,7 @@
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/switch/switch.h"
-#include "../m5sticks3_common/m5sticks3_common.h"
+#include "m5sticks3_power_common.h"
 
 namespace esphome {
 namespace m5sticks3_power {
@@ -33,7 +33,7 @@ class M5StickS3Power : public PollingComponent {
   void set_ext_5v_switch(M5StickS3Ext5VSwitch *sw) { this->ext_5v_switch_ = sw; }
 
   void setup() override {
-    m5sticks3_common::ensure_m5sticks3_begin(this->sda_pin_, this->scl_pin_);
+    ensure_m5sticks3_power_begin(this->sda_pin_, this->scl_pin_);
     this->publish_ext_5v_state_();
   }
 

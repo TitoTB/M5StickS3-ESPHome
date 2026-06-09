@@ -7,7 +7,7 @@ namespace m5sticks3_display {
 static const char *const TAG = "m5sticks3_display";
 
 void M5StickS3Display::setup() {
-  m5sticks3_common::ensure_m5sticks3_begin(this->sda_pin_, this->scl_pin_);
+  ensure_m5sticks3_display_begin(this->sda_pin_, this->scl_pin_);
   delay(150);
 
   M5.Display.begin();

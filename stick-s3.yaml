@@ -73,7 +73,6 @@ external_components:
       ref: main
       path: components
     components:
-      - m5sticks3_common
       - m5sticks3_display
       - m5sticks3_power
     # Temporal durante el desarrollo: volver a 1days cuando la base compile estable.

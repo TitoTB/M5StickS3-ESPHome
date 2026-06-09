@@ -4,9 +4,9 @@
 #include <Wire.h>
 
 namespace esphome {
-namespace m5sticks3_common {
+namespace m5sticks3_power {
 
-inline void ensure_m5sticks3_begin(int sda, int scl) {
+inline void ensure_m5sticks3_power_begin(int sda, int scl) {
   static bool initialized = false;
   if (initialized) {
     return;
@@ -27,5 +27,5 @@ inline void ensure_m5sticks3_begin(int sda, int scl) {
   initialized = true;
 }
 
-}  // namespace m5sticks3_common
+}  // namespace m5sticks3_power
 }  // namespace esphome

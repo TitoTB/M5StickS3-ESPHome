@@ -2,7 +2,7 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/display/display_buffer.h"
-#include "../m5sticks3_common/m5sticks3_common.h"
+#include "m5sticks3_display_common.h"
 
 namespace esphome {
 namespace m5sticks3_display {
