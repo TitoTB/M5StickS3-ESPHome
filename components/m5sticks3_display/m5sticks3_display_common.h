@@ -20,7 +20,7 @@ inline void ensure_m5sticks3_display_begin(int sda, int scl) {
   config.internal_imu = false;
   config.internal_rtc = false;
   config.internal_mic = false;
-  config.internal_spk = false;
+  config.internal_spk = true;
   config.external_imu = false;
   config.external_rtc = false;
   config.output_power = false;

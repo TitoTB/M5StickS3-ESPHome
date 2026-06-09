@@ -1,6 +1,6 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import binary_sensor, sensor, switch
+from esphome.components import binary_sensor, button, sensor, switch
 from esphome.const import (
     CONF_ID,
     DEVICE_CLASS_BATTERY,
@@ -12,12 +12,15 @@ from esphome.const import (
 )
 
 DEPENDENCIES = ["esp32"]
-AUTO_LOAD = ["binary_sensor", "sensor", "switch"]
+AUTO_LOAD = ["binary_sensor", "button", "sensor", "switch"]
 
 m5sticks3_power_ns = cg.esphome_ns.namespace("m5sticks3_power")
 M5StickS3Power = m5sticks3_power_ns.class_("M5StickS3Power", cg.PollingComponent)
 M5StickS3Ext5VSwitch = m5sticks3_power_ns.class_(
     "M5StickS3Ext5VSwitch", switch.Switch, cg.Component
+)
+M5StickS3BeepButton = m5sticks3_power_ns.class_(
+    "M5StickS3BeepButton", button.Button, cg.Component
 )
 
 CONF_BATTERY_LEVEL = "battery_level"
@@ -26,6 +29,7 @@ CONF_INPUT_VOLTAGE = "input_voltage"
 CONF_FIVE_VOLT_VOLTAGE = "five_volt_voltage"
 CONF_CHARGING = "charging"
 CONF_EXT_5V = "ext_5v"
+CONF_BEEP = "beep"
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -67,6 +71,10 @@ CONFIG_SCHEMA = cv.Schema(
             icon="mdi:power-plug",
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
         ),
+        cv.Optional(CONF_BEEP): button.button_schema(
+            M5StickS3BeepButton,
+            icon="mdi:volume-high",
+        ),
     }
 ).extend(cv.polling_component_schema("30s"))
 
@@ -100,3 +108,8 @@ async def to_code(config):
         await cg.register_component(sw, ext_5v_config)
         cg.add(sw.set_parent(var))
         cg.add(var.set_ext_5v_switch(sw))
+
+    if beep_config := config.get(CONF_BEEP):
+        btn = await button.new_button(beep_config)
+        await cg.register_component(btn, beep_config)
+        cg.add(btn.set_parent(var))

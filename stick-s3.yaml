@@ -150,6 +150,8 @@ display:
 m5sticks3_power:
   id: stick_power
   update_interval: 5min
+  beep:
+    name: "Bip de confirmacion"
 
 binary_sensor:
   - platform: gpio
@@ -206,33 +208,3 @@ button:
 
   - platform: safe_mode
     name: "Reiniciar en modo seguro"
-
-i2s_audio:
-  - id: i2s_bus
-    i2s_mclk_pin: GPIO18
-    i2s_bclk_pin: GPIO17
-    i2s_lrclk_pin: GPIO15
-
-speaker:
-  - platform: i2s_audio
-    id: internal_speaker
-    i2s_audio_id: i2s_bus
-    dac_type: external
-    i2s_dout_pin: GPIO16
-    sample_rate: 16000
-    bits_per_sample: 16bit
-    channel: left
-    timeout: never
-
-media_player:
-  - platform: speaker
-    id: stick_media_player
-    name: "Reproductor multimedia"
-    announcement_pipeline:
-      speaker: internal_speaker
-      format: WAV
-      sample_rate: 16000
-      num_channels: 1
-    buffer_size: 200000
-    volume_initial: 50%
-    volume_max: 75%

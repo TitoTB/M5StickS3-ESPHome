@@ -7,7 +7,6 @@ namespace m5sticks3_power {
 static constexpr int M5STICKS3_I2C_SDA = 47;
 static constexpr int M5STICKS3_I2C_SCL = 48;
 static constexpr uint8_t M5STICKS3_PMIC_ADDRESS = 0x6E;
-static constexpr uint8_t M5STICKS3_ES8311_ADDRESS = 0x18;
 
 bool M5StickS3Power::init_pmic_() {
   ESP_LOGI(TAG, "Initializing PMIC with M5PM1/Wire");
@@ -46,10 +45,6 @@ bool M5StickS3Power::init_pmic_() {
     ESP_LOGW(TAG, "Audio amplifier pulse configuration failed");
   }
 
-  if (!this->configure_audio_codec_()) {
-    ESP_LOGW(TAG, "ES8311 codec configuration failed");
-  }
-
   this->pmic_ready_ = true;
   ESP_LOGI(TAG, "PMIC init complete");
   return true;
@@ -69,66 +64,6 @@ bool M5StickS3Power::configure_audio_amp_() {
     return false;
   }
   ESP_LOGI(TAG, "Speaker amplifier enabled");
-  return true;
-}
-
-bool M5StickS3Power::write_es8311_byte_(uint8_t reg, uint8_t value) {
-  Wire.beginTransmission(M5STICKS3_ES8311_ADDRESS);
-  Wire.write(reg);
-  Wire.write(value);
-  const uint8_t err = Wire.endTransmission();
-  if (err != 0) {
-    ESP_LOGW(TAG, "ES8311 write 0x%02X=0x%02X failed: %u", reg, value, err);
-    return false;
-  }
-  return true;
-}
-
-bool M5StickS3Power::configure_audio_codec_() {
-  ESP_LOGI(TAG, "Configuring ES8311 DAC over Wire");
-
-  struct RegValue {
-    uint8_t reg;
-    uint8_t value;
-  };
-
-  static constexpr RegValue codec_init[] = {
-      {0x00, 0x1F},  // Reset
-      {0x00, 0x00},
-      {0x01, 0x3F},  // Enable clocks, use MCLK
-      {0x02, 0x48},  // 12.288 MHz MCLK -> 16 kHz
-      {0x03, 0x10},
-      {0x04, 0x20},
-      {0x05, 0x00},
-      {0x06, 0x03},
-      {0x07, 0x00},
-      {0x08, 0xFF},
-      {0x09, 0x0C},  // DAC serial input, I2S, 16-bit
-      {0x0A, 0x0C},  // ADC serial output, I2S, 16-bit
-      {0x14, 0x1A},
-      {0x16, 0x00},
-      {0x17, 0xC8},
-      {0x32, 0xBF},  // 0 dB DAC volume
-      {0x0D, 0x01},  // Power up analog circuitry
-      {0x0E, 0x02},
-      {0x12, 0x00},  // Power up DAC
-      {0x13, 0x10},  // Enable HP/output driver
-      {0x1C, 0x6A},
-      {0x31, 0x00},  // Unmute DAC
-      {0x37, 0x08},
-      {0x00, 0x80},  // Power on
-  };
-
-  for (const auto &item : codec_init) {
-    if (!this->write_es8311_byte_(item.reg, item.value)) {
-      this->codec_ready_ = false;
-      return false;
-    }
-    delay(2);
-  }
-
-  this->codec_ready_ = true;
-  ESP_LOGI(TAG, "ES8311 DAC configured");
   return true;
 }
 
@@ -212,6 +147,17 @@ void M5StickS3Power::set_ext_5v(bool state) {
 
   this->boost_enabled_ = state;
   this->publish_ext_5v_state_();
+}
+
+void M5StickS3Power::play_beep() {
+  ESP_LOGI(TAG, "Playing confirmation beep");
+  M5.Speaker.begin();
+  M5.Speaker.setVolume(150);
+  M5.Speaker.tone(1800, 80);
+  delay(120);
+  M5.Speaker.tone(2400, 110);
+  delay(150);
+  M5.Speaker.stop();
 }
 
 void M5StickS3Power::publish_ext_5v_state_() {
