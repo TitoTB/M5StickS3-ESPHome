@@ -28,7 +28,7 @@ wifi_password: "..."
 
 3. Reemplaza en `stick-s3.yaml` los placeholders de `api.encryption.key`, `ota.password` y `wifi.ap.password` por los valores que te genere ESPHome.
 
-Nota temporal: `external_components.refresh` esta en `0s` durante el desarrollo para forzar que ESPHome descargue siempre la ultima version del repositorio. Cuando la base compile estable, conviene cambiarlo a `1days`.
+Nota temporal: `external_components.ref` esta fijado a un commit y `external_components.refresh` esta en `0s` durante el desarrollo para forzar que ESPHome descargue una copia fresca del repositorio. Cuando la base compile estable, conviene volver a `ref: main` y `refresh: 1days`.
 
 ## Nota sobre IR
 
