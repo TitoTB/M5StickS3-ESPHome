@@ -68,8 +68,8 @@ web_server:
 
 i2c:
   - id: internal_i2c
-    sda: 47
-    scl: 48
+    sda: GPIO47
+    scl: GPIO48
     scan: true
     frequency: 100kHz
 

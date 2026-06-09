@@ -33,7 +33,7 @@ class M5StickS3Power : public PollingComponent, public i2c::I2CDevice {
   void update() override;
   void set_ext_5v(bool state);
 
-  float get_setup_priority() const override { return setup_priority::HARDWARE; }
+  float get_setup_priority() const override { return setup_priority::BUS - 1.0f; }
   void dump_config() override;
 
  protected:
@@ -43,6 +43,7 @@ class M5StickS3Power : public PollingComponent, public i2c::I2CDevice {
   bool read_voltage_(uint8_t low_reg, uint16_t *mv);
   bool read_power_source_(uint8_t *source);
   bool update_bits_(uint8_t reg, uint8_t mask, uint8_t value);
+  bool configure_audio_amp_();
 
   bool pmic_ready_{false};
   bool boost_enabled_{false};

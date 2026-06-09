@@ -6,6 +6,7 @@ namespace m5sticks3_power {
 
 static constexpr uint8_t M5PM1_REG_PWR_SRC = 0x04;
 static constexpr uint8_t M5PM1_REG_PWR_CFG = 0x06;
+static constexpr uint8_t M5PM1_REG_I2C_CFG = 0x09;
 static constexpr uint8_t M5PM1_REG_GPIO_MODE = 0x10;
 static constexpr uint8_t M5PM1_REG_GPIO_OUT = 0x11;
 static constexpr uint8_t M5PM1_REG_GPIO_DRV = 0x13;
@@ -13,6 +14,7 @@ static constexpr uint8_t M5PM1_REG_GPIO_FUNC0 = 0x16;
 static constexpr uint8_t M5PM1_REG_VBAT_L = 0x22;
 static constexpr uint8_t M5PM1_REG_VIN_L = 0x24;
 static constexpr uint8_t M5PM1_REG_5VINOUT_L = 0x26;
+static constexpr uint8_t M5PM1_REG_AW8737A_PULSE = 0x53;
 
 static constexpr uint8_t M5PM1_PWR_CFG_CHG_EN = 1 << 0;
 static constexpr uint8_t M5PM1_PWR_CFG_DCDC_EN = 1 << 1;
@@ -21,8 +23,11 @@ static constexpr uint8_t M5PM1_PWR_CFG_BOOST_EN = 1 << 3;
 static constexpr uint8_t M5PM1_PWR_SRC_BAT = 2;
 static constexpr uint8_t M5PM1_PWR_SRC_UNKNOWN = 3;
 static constexpr uint8_t M5PM1_GPIO2_MASK = 1 << 2;
+static constexpr uint8_t M5PM1_GPIO3_MASK = 1 << 3;
 
 bool M5StickS3Power::init_pmic_() {
+  ESP_LOGI(TAG, "Initializing PMIC over ESPHome I2C bus");
+
   uint8_t power_config = 0;
   if (!this->read_byte(M5PM1_REG_PWR_CFG, &power_config)) {
     ESP_LOGE(TAG, "PMIC init failed: cannot read power config");
@@ -38,11 +43,20 @@ bool M5StickS3Power::init_pmic_() {
   }
   this->boost_enabled_ = true;
 
+  // Disable PMIC I2C auto-sleep and keep 100 kHz mode so later reads do not time out.
+  if (!this->write_byte(M5PM1_REG_I2C_CFG, 0x00)) {
+    ESP_LOGW(TAG, "Could not disable PMIC I2C sleep");
+  }
+
   // PYG2_L3B_EN controls the LCD/audio rail on StickS3. GPIO mode, push-pull, low = enabled.
   this->update_bits_(M5PM1_REG_GPIO_FUNC0, 0b00110000, 0);
   this->update_bits_(M5PM1_REG_GPIO_MODE, M5PM1_GPIO2_MASK, M5PM1_GPIO2_MASK);
   this->update_bits_(M5PM1_REG_GPIO_DRV, M5PM1_GPIO2_MASK, 0);
   this->update_bits_(M5PM1_REG_GPIO_OUT, M5PM1_GPIO2_MASK, 0);
+
+  if (!this->configure_audio_amp_()) {
+    ESP_LOGW(TAG, "Audio amplifier pulse configuration failed");
+  }
 
   this->pmic_ready_ = true;
   ESP_LOGI(TAG, "PMIC init complete");
@@ -74,6 +88,22 @@ bool M5StickS3Power::update_bits_(uint8_t reg, uint8_t mask, uint8_t value) {
   }
   raw = (raw & ~mask) | (value & mask);
   return this->write_byte(reg, raw);
+}
+
+bool M5StickS3Power::configure_audio_amp_() {
+  // StickS3 uses M5PM1 PYG3_SPK_Pulse for the AW8737A speaker amplifier.
+  // Pulse count 2 gives a moderate gain; register bit 7 triggers the refresh.
+  this->update_bits_(M5PM1_REG_GPIO_FUNC0, 0b11000000, 0);
+  this->update_bits_(M5PM1_REG_GPIO_MODE, M5PM1_GPIO3_MASK, M5PM1_GPIO3_MASK);
+  this->update_bits_(M5PM1_REG_GPIO_DRV, M5PM1_GPIO3_MASK, 0);
+
+  const uint8_t pin = 3;
+  const uint8_t pulse_count = 2;
+  const uint8_t pulse_config = pin | (pulse_count << 5);
+  if (!this->write_byte(M5PM1_REG_AW8737A_PULSE, pulse_config)) {
+    return false;
+  }
+  return this->write_byte(M5PM1_REG_AW8737A_PULSE, pulse_config | 0x80);
 }
 
 float M5StickS3Power::estimate_battery_level_(uint16_t battery_mv) {
