@@ -2,7 +2,7 @@ substitutions:
   name: stick-s3
   friendly_name: Stick S3
   # Cambia esta URL cuando hayas publicado este repositorio en GitHub.
-  external_components_url: "https://github.com/TU_USUARIO/M5StickS3-ESPHome.git"
+  external_components_url: "https://github.com/TitoTB/M5StickS3-ESPHome.git"
   external_components_ref: "main"
 
 esphome:
