@@ -294,11 +294,6 @@ media_player:
       format: WAV
       sample_rate: 16000
       num_channels: 1
-    media_pipeline:
-      speaker: internal_speaker
-      format: WAV
-      sample_rate: 16000
-      num_channels: 1
     buffer_size: 200000
     volume_initial: 50%
     volume_max: 75%
