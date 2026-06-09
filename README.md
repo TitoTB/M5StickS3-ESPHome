@@ -7,13 +7,14 @@ Integracion inicial para el M5Stack StickS3 ESP32-S3 Mini IoT Dev Kit en Home As
 Esta v1 incluye:
 
 - Pantalla M5StickS3 mediante componente ESPHome propio.
-- Gestion basica de energia mediante `M5.Power`.
-- Bateria, voltaje, corriente de bateria, estado de carga y salida EXT 5V.
+- Gestion basica de energia mediante M5PM1.
+- Bateria estimada, voltaje de bateria, voltaje de entrada USB, rail 5V, estado de carga y salida EXT 5V.
 - Boton azul y boton lateral.
 - Retroiluminacion de pantalla.
+- Altavoz ES8311 como reproductor multimedia.
+- Microfono ES8311/I2S para asistente de voz.
 - Diagnostico Wi-Fi, uptime, IP, SSID y MAC.
 
-Audio, reproductor multimedia y asistente de voz quedan fuera de esta v1 para mantener una base segura.
 IR queda fuera de esta v1 para evitar ruido de recepcion y mantener la configuracion estable.
 
 ## Uso
