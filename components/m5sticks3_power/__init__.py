@@ -4,11 +4,9 @@ from esphome.components import binary_sensor, sensor, switch
 from esphome.const import (
     CONF_ID,
     DEVICE_CLASS_BATTERY,
-    DEVICE_CLASS_CURRENT,
     DEVICE_CLASS_VOLTAGE,
     ENTITY_CATEGORY_DIAGNOSTIC,
     STATE_CLASS_MEASUREMENT,
-    UNIT_AMPERE,
     UNIT_PERCENT,
     UNIT_VOLT,
 )
@@ -26,7 +24,8 @@ CONF_SDA = "sda"
 CONF_SCL = "scl"
 CONF_BATTERY_LEVEL = "battery_level"
 CONF_BATTERY_VOLTAGE = "battery_voltage"
-CONF_BATTERY_CURRENT = "battery_current"
+CONF_INPUT_VOLTAGE = "input_voltage"
+CONF_FIVE_VOLT_VOLTAGE = "five_volt_voltage"
 CONF_CHARGING = "charging"
 CONF_EXT_5V = "ext_5v"
 
@@ -50,10 +49,17 @@ CONFIG_SCHEMA = cv.Schema(
             state_class=STATE_CLASS_MEASUREMENT,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
         ),
-        cv.Optional(CONF_BATTERY_CURRENT): sensor.sensor_schema(
-            unit_of_measurement=UNIT_AMPERE,
+        cv.Optional(CONF_INPUT_VOLTAGE): sensor.sensor_schema(
+            unit_of_measurement=UNIT_VOLT,
             accuracy_decimals=3,
-            device_class=DEVICE_CLASS_CURRENT,
+            device_class=DEVICE_CLASS_VOLTAGE,
+            state_class=STATE_CLASS_MEASUREMENT,
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        ),
+        cv.Optional(CONF_FIVE_VOLT_VOLTAGE): sensor.sensor_schema(
+            unit_of_measurement=UNIT_VOLT,
+            accuracy_decimals=3,
+            device_class=DEVICE_CLASS_VOLTAGE,
             state_class=STATE_CLASS_MEASUREMENT,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
         ),
@@ -83,9 +89,13 @@ async def to_code(config):
         sens = await sensor.new_sensor(battery_voltage_config)
         cg.add(var.set_battery_voltage_sensor(sens))
 
-    if battery_current_config := config.get(CONF_BATTERY_CURRENT):
-        sens = await sensor.new_sensor(battery_current_config)
-        cg.add(var.set_battery_current_sensor(sens))
+    if input_voltage_config := config.get(CONF_INPUT_VOLTAGE):
+        sens = await sensor.new_sensor(input_voltage_config)
+        cg.add(var.set_input_voltage_sensor(sens))
+
+    if five_volt_voltage_config := config.get(CONF_FIVE_VOLT_VOLTAGE):
+        sens = await sensor.new_sensor(five_volt_voltage_config)
+        cg.add(var.set_five_volt_voltage_sensor(sens))
 
     if charging_config := config.get(CONF_CHARGING):
         sens = await binary_sensor.new_binary_sensor(charging_config)

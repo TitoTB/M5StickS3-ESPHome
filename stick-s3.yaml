@@ -9,6 +9,7 @@ esphome:
   on_boot:
     - priority: -100
       then:
+        - component.suspend: ir_rx
         - component.resume: stick_display
         - light.turn_on:
             id: backlight
@@ -16,6 +17,7 @@ esphome:
   libraries:
     - Wire
     - SPI
+    - M5PM1=git+https://github.com/m5stack/M5PM1.git#1.0.6
     - m5stack/M5Unified@^0.2.7
     - m5stack/M5GFX@^0.2.16
   platformio_options:
@@ -96,6 +98,18 @@ light:
     restore_mode: ALWAYS_ON
     default_transition_length: 0s
 
+switch:
+  - platform: template
+    id: ir_receiver_enabled
+    name: "Receptor IR"
+    icon: "mdi:remote"
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    turn_on_action:
+      - component.resume: ir_rx
+    turn_off_action:
+      - component.suspend: ir_rx
+
 font:
   - file: "gfonts://Roboto"
     id: font_small
@@ -160,8 +174,10 @@ m5sticks3_power:
     name: "Bateria"
   battery_voltage:
     name: "Voltaje bateria"
-  battery_current:
-    name: "Corriente bateria"
+  input_voltage:
+    name: "Voltaje entrada USB"
+  five_volt_voltage:
+    name: "Voltaje rail 5V"
   charging:
     name: "Cargando"
   ext_5v:
