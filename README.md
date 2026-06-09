@@ -11,9 +11,8 @@ Esta v1 incluye:
 - Bateria estimada, voltaje de bateria, voltaje de entrada USB, rail 5V, estado de carga y salida EXT 5V.
 - Boton azul y boton lateral.
 - Retroiluminacion de pantalla.
-- Altavoz ES8311 como reproductor multimedia.
-- Microfono ES8311/I2S para asistente de voz.
-- Diagnostico Wi-Fi, uptime, IP, SSID y MAC.
+- Bip de confirmacion mediante el altavoz interno.
+- Microfono I2S para asistente de voz nativo de Home Assistant.
 
 IR queda fuera de esta v1 para evitar ruido de recepcion y mantener la configuracion estable.
 

@@ -13,6 +13,8 @@ esphome:
         - light.turn_on:
             id: backlight
             brightness: 30%
+        - lambda: |-
+            M5.Speaker.end();
   libraries:
     - Wire
     - SPI
@@ -135,17 +137,7 @@ display:
 
       it.print(120, 96, id(font_medium), id(color_green), TextAlign::CENTER, "Hola Home Assistant");
 
-      it.print(120, 126, id(font_medium), id(color_gray), TextAlign::CENTER, "Altavoz listo");
-
-      if (id(api_status).state) {
-        it.print(8, 6, id(font_small), id(color_green), TextAlign::TOP_LEFT, "HA");
-      } else {
-        it.print(8, 6, id(font_small), id(color_red), TextAlign::TOP_LEFT, "HA");
-      }
-
-      if (!isnan(id(wifi_signal_db).state)) {
-        it.printf(232, 6, id(font_small), id(color_gray), TextAlign::TOP_RIGHT, "%.0f dBm", id(wifi_signal_db).state);
-      }
+      it.print(120, 126, id(font_medium), id(color_gray), TextAlign::CENTER, "Asistente listo");
 
 m5sticks3_power:
   id: stick_power
@@ -180,31 +172,46 @@ binary_sensor:
       - delayed_on: 10ms
       - delayed_off: 10ms
 
-  - platform: status
-    id: api_status
-    name: "Estado Home Assistant"
-
-sensor:
-  - platform: wifi_signal
-    id: wifi_signal_db
-    name: "Senal WiFi"
-    update_interval: 60s
-
-  - platform: uptime
-    name: "Tiempo encendido"
-
-text_sensor:
-  - platform: wifi_info
-    ip_address:
-      name: "IP"
-    ssid:
-      name: "SSID"
-    mac_address:
-      name: "MAC"
-
 button:
-  - platform: restart
-    name: "Reiniciar"
+  - platform: template
+    name: "Iniciar asistente"
+    icon: "mdi:microphone"
+    on_press:
+      - lambda: |-
+          M5.Speaker.end();
+      - voice_assistant.start:
 
-  - platform: safe_mode
-    name: "Reiniciar en modo seguro"
+  - platform: template
+    name: "Detener asistente"
+    icon: "mdi:microphone-off"
+    on_press:
+      - voice_assistant.stop:
+
+i2s_audio:
+  - id: i2s_bus
+    i2s_mclk_pin: GPIO18
+    i2s_bclk_pin: GPIO17
+    i2s_lrclk_pin: GPIO15
+
+microphone:
+  - platform: i2s_audio
+    id: internal_microphone
+    i2s_audio_id: i2s_bus
+    adc_type: external
+    i2s_din_pin: GPIO14
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    channel: left
+
+voice_assistant:
+  id: va
+  microphone:
+    microphone: internal_microphone
+    channels: 0
+    gain_factor: 2
+  on_start:
+    - logger.log: "Asistente de voz iniciado"
+  on_listening:
+    - logger.log: "Escuchando"
+  on_end:
+    - logger.log: "Asistente de voz finalizado"
