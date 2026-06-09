@@ -2,7 +2,6 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/display/display_buffer.h"
-#include "esphome/core/hal.h"
 #include "../m5sticks3_common/m5sticks3_common.h"
 
 namespace esphome {
@@ -10,15 +9,13 @@ namespace m5sticks3_display {
 
 class M5StickS3Display : public PollingComponent, public display::DisplayBuffer {
  public:
-  void set_i2c_pins(GPIOPin *sda, GPIOPin *scl) {
+  void set_i2c_pins(int sda, int scl) {
     this->sda_pin_ = sda;
     this->scl_pin_ = scl;
   }
 
   void setup() override {
-    const int sda = this->pin_number_(this->sda_pin_, 47);
-    const int scl = this->pin_number_(this->scl_pin_, 48);
-    m5sticks3_common::ensure_m5sticks3_begin(sda, scl);
+    m5sticks3_common::ensure_m5sticks3_begin(this->sda_pin_, this->scl_pin_);
 
     M5.Display.setRotation(1);
     M5.Display.setBrightness(96);
@@ -47,15 +44,8 @@ class M5StickS3Display : public PollingComponent, public display::DisplayBuffer 
     M5.Display.drawPixel(x, y, color.to_rgb_565());
   }
 
-  int pin_number_(GPIOPin *pin, int fallback) {
-    if (pin == nullptr) {
-      return fallback;
-    }
-    return pin->get_pin();
-  }
-
-  GPIOPin *sda_pin_{nullptr};
-  GPIOPin *scl_pin_{nullptr};
+  int sda_pin_{47};
+  int scl_pin_{48};
   static constexpr const char *TAG = "m5sticks3_display";
 };
 

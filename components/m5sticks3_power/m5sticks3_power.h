@@ -4,7 +4,6 @@
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/switch/switch.h"
-#include "esphome/core/hal.h"
 #include "../m5sticks3_common/m5sticks3_common.h"
 
 namespace esphome {
@@ -23,7 +22,7 @@ class M5StickS3Ext5VSwitch : public switch_::Switch, public Component {
 
 class M5StickS3Power : public PollingComponent {
  public:
-  void set_i2c_pins(GPIOPin *sda, GPIOPin *scl) {
+  void set_i2c_pins(int sda, int scl) {
     this->sda_pin_ = sda;
     this->scl_pin_ = scl;
   }
@@ -34,9 +33,7 @@ class M5StickS3Power : public PollingComponent {
   void set_ext_5v_switch(M5StickS3Ext5VSwitch *sw) { this->ext_5v_switch_ = sw; }
 
   void setup() override {
-    const int sda = this->pin_number_(this->sda_pin_, 47);
-    const int scl = this->pin_number_(this->scl_pin_, 48);
-    m5sticks3_common::ensure_m5sticks3_begin(sda, scl);
+    m5sticks3_common::ensure_m5sticks3_begin(this->sda_pin_, this->scl_pin_);
     this->publish_ext_5v_state_();
   }
 
@@ -82,21 +79,14 @@ class M5StickS3Power : public PollingComponent {
   }
 
  protected:
-  int pin_number_(GPIOPin *pin, int fallback) {
-    if (pin == nullptr) {
-      return fallback;
-    }
-    return pin->get_pin();
-  }
-
   void publish_ext_5v_state_() {
     if (this->ext_5v_switch_ != nullptr) {
       this->ext_5v_switch_->publish_state(M5.Power.getExtOutput());
     }
   }
 
-  GPIOPin *sda_pin_{nullptr};
-  GPIOPin *scl_pin_{nullptr};
+  int sda_pin_{47};
+  int scl_pin_{48};
   sensor::Sensor *battery_level_sensor_{nullptr};
   sensor::Sensor *battery_voltage_sensor_{nullptr};
   sensor::Sensor *battery_current_sensor_{nullptr};

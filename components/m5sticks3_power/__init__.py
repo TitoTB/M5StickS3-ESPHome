@@ -1,6 +1,5 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome import pins
 from esphome.components import binary_sensor, sensor, switch
 from esphome.const import (
     CONF_ID,
@@ -34,8 +33,8 @@ CONF_EXT_5V = "ext_5v"
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(M5StickS3Power),
-        cv.Optional(CONF_SDA, default="GPIO47"): pins.internal_gpio_output_pin_schema,
-        cv.Optional(CONF_SCL, default="GPIO48"): pins.internal_gpio_output_pin_schema,
+        cv.Optional(CONF_SDA, default=47): cv.int_range(min=0, max=48),
+        cv.Optional(CONF_SCL, default=48): cv.int_range(min=0, max=48),
         cv.Optional(CONF_BATTERY_LEVEL): sensor.sensor_schema(
             unit_of_measurement=UNIT_PERCENT,
             icon="mdi:battery",
@@ -74,9 +73,7 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
 
-    sda = await cg.gpio_pin_expression(config[CONF_SDA])
-    scl = await cg.gpio_pin_expression(config[CONF_SCL])
-    cg.add(var.set_i2c_pins(sda, scl))
+    cg.add(var.set_i2c_pins(config[CONF_SDA], config[CONF_SCL]))
 
     if battery_level_config := config.get(CONF_BATTERY_LEVEL):
         sens = await sensor.new_sensor(battery_level_config)

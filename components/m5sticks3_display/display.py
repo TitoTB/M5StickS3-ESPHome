@@ -1,6 +1,5 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome import pins
 from esphome.components import display
 from esphome.const import CONF_ID, CONF_LAMBDA
 
@@ -18,8 +17,8 @@ CONF_SCL = "scl"
 CONFIG_SCHEMA = display.FULL_DISPLAY_SCHEMA.extend(
     {
         cv.GenerateID(): cv.declare_id(M5StickS3Display),
-        cv.Optional(CONF_SDA, default="GPIO47"): pins.internal_gpio_output_pin_schema,
-        cv.Optional(CONF_SCL, default="GPIO48"): pins.internal_gpio_output_pin_schema,
+        cv.Optional(CONF_SDA, default=47): cv.int_range(min=0, max=48),
+        cv.Optional(CONF_SCL, default=48): cv.int_range(min=0, max=48),
     }
 ).extend(cv.polling_component_schema("1s"))
 
@@ -29,9 +28,7 @@ async def to_code(config):
     await cg.register_component(var, config)
     await display.register_display(var, config)
 
-    sda = await cg.gpio_pin_expression(config[CONF_SDA])
-    scl = await cg.gpio_pin_expression(config[CONF_SCL])
-    cg.add(var.set_i2c_pins(sda, scl))
+    cg.add(var.set_i2c_pins(config[CONF_SDA], config[CONF_SCL]))
 
     if CONF_LAMBDA in config:
         lambda_ = await cg.process_lambda(

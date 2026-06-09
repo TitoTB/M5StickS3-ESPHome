@@ -24,10 +24,9 @@ Audio, reproductor multimedia y asistente de voz quedan fuera de esta v1 para ma
 ```yaml
 wifi_ssid: "..."
 wifi_password: "..."
-fallback_ap_password: "..."
-api_encryption_key: "..."
-ota_password: "..."
 ```
+
+3. Reemplaza en `stick-s3.yaml` los placeholders de `api.encryption.key`, `ota.password` y `wifi.ap.password` por los valores que te genere ESPHome.
 
 ## Nota sobre IR
 
