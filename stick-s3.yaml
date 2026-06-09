@@ -77,6 +77,7 @@ external_components:
       path: components
     components:
       - m5sticks3_display
+      - m5sticks3_microphone
       - m5sticks3_power
     # Temporal durante el desarrollo: volver a 1days cuando la base compile estable.
     refresh: 0s
@@ -187,23 +188,11 @@ button:
     on_press:
       - voice_assistant.stop:
 
-i2s_audio:
-  - id: i2s_bus
-    i2s_mclk_pin: GPIO18
-    i2s_bclk_pin: GPIO17
-    i2s_lrclk_pin: GPIO15
-
 microphone:
-  - platform: i2s_audio
+  - platform: m5sticks3_microphone
     id: internal_microphone
-    i2s_audio_id: i2s_bus
-    adc_type: external
-    i2s_din_pin: GPIO14
     sample_rate: 16000
-    bits_per_sample: 16bit
-    mclk_multiple: 256
-    use_apll: true
-    channel: left
+    buffer_duration: 20ms
 
 voice_assistant:
   id: va

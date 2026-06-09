@@ -12,7 +12,7 @@ Esta v1 incluye:
 - Boton azul y boton lateral.
 - Retroiluminacion de pantalla.
 - Bip de confirmacion mediante el altavoz interno.
-- Microfono I2S para asistente de voz nativo de Home Assistant.
+- Microfono mediante componente propio M5Unified/M5.Mic para asistente de voz nativo de Home Assistant.
 
 IR queda fuera de esta v1 para evitar ruido de recepcion y mantener la configuracion estable.
 
