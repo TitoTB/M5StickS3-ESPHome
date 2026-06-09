@@ -16,6 +16,7 @@ esphome:
   libraries:
     - Wire
     - SPI
+    - M5PM1=git+https://github.com/m5stack/M5PM1.git#1.0.6
     - m5stack/M5Unified@^0.2.7
     - m5stack/M5GFX@^0.2.16
   platformio_options:

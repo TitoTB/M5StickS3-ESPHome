@@ -24,6 +24,9 @@ static constexpr uint8_t M5PM1_PWR_SRC_BAT = 2;
 static constexpr uint8_t M5PM1_PWR_SRC_UNKNOWN = 3;
 static constexpr uint8_t M5PM1_GPIO2_MASK = 1 << 2;
 static constexpr uint8_t M5PM1_GPIO3_MASK = 1 << 3;
+static constexpr int M5STICKS3_I2C_SDA = 47;
+static constexpr int M5STICKS3_I2C_SCL = 48;
+static constexpr uint8_t M5STICKS3_PMIC_ADDRESS = 0x6E;
 
 bool M5StickS3Power::init_pmic_() {
   ESP_LOGI(TAG, "Initializing PMIC over ESPHome I2C bus");
@@ -35,13 +38,14 @@ bool M5StickS3Power::init_pmic_() {
     return false;
   }
 
-  if (!this->write_byte(M5PM1_REG_PWR_CFG, power_config | M5PM1_PWR_CFG_CHG_EN | M5PM1_PWR_CFG_DCDC_EN |
-                                                 M5PM1_PWR_CFG_LDO_EN | M5PM1_PWR_CFG_BOOST_EN)) {
+  if (!this->write_byte(M5PM1_REG_PWR_CFG,
+                        (power_config | M5PM1_PWR_CFG_CHG_EN | M5PM1_PWR_CFG_DCDC_EN | M5PM1_PWR_CFG_LDO_EN) &
+                            ~M5PM1_PWR_CFG_BOOST_EN)) {
     ESP_LOGE(TAG, "PMIC init failed: cannot enable power rails");
     this->pmic_ready_ = false;
     return false;
   }
-  this->boost_enabled_ = true;
+  this->boost_enabled_ = false;
 
   // Disable PMIC I2C auto-sleep and keep 100 kHz mode so later reads do not time out.
   if (!this->write_byte(M5PM1_REG_I2C_CFG, 0x00)) {
@@ -60,6 +64,47 @@ bool M5StickS3Power::init_pmic_() {
 
   this->pmic_ready_ = true;
   ESP_LOGI(TAG, "PMIC init complete");
+  return true;
+}
+
+bool M5StickS3Power::init_pmic_with_library_() {
+  ESP_LOGI(TAG, "Initializing PMIC before ESPHome I2C bus setup");
+
+  Wire.begin(M5STICKS3_I2C_SDA, M5STICKS3_I2C_SCL, 100000U);
+  delay(20);
+
+  const m5pm1_err_t err = this->pm1_.begin(&Wire, M5STICKS3_PMIC_ADDRESS, M5STICKS3_I2C_SDA, M5STICKS3_I2C_SCL, 100000U);
+  if (err != M5PM1_OK) {
+    ESP_LOGE(TAG, "Early PMIC init failed: %d", err);
+    Wire.end();
+    this->pmic_ready_ = false;
+    return false;
+  }
+
+  this->pm1_.setI2cConfig(0, M5PM1_I2C_SPEED_100K);
+  this->pm1_.setDcdcEnable(true);
+  delay(20);
+  this->pm1_.setLdoEnable(true);
+  delay(20);
+  this->pm1_.setChargeEnable(true);
+  delay(20);
+  this->pm1_.setBoostEnable(false);
+  this->boost_enabled_ = false;
+  delay(20);
+
+  this->pm1_.gpioSetFunc(M5PM1_GPIO_NUM_2, M5PM1_GPIO_FUNC_GPIO);
+  this->pm1_.gpioSetMode(M5PM1_GPIO_NUM_2, M5PM1_GPIO_MODE_OUTPUT);
+  this->pm1_.gpioSetDrive(M5PM1_GPIO_NUM_2, M5PM1_GPIO_DRIVE_PUSHPULL);
+  this->pm1_.gpioSetOutput(M5PM1_GPIO_NUM_2, false);
+  delay(100);
+
+  this->pm1_.setAw8737aPulse(M5PM1_GPIO_NUM_3, M5PM1_AW8737A_PULSE_2, M5PM1_AW8737A_REFRESH_NOW);
+  delay(20);
+
+  Wire.end();
+
+  this->pmic_ready_ = true;
+  ESP_LOGI(TAG, "Early PMIC init complete");
   return true;
 }
 
@@ -117,7 +162,7 @@ float M5StickS3Power::estimate_battery_level_(uint16_t battery_mv) {
 }
 
 void M5StickS3Power::setup() {
-  this->init_pmic_();
+  this->init_pmic_with_library_();
   this->publish_ext_5v_state_();
 }
 
