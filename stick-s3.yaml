@@ -20,7 +20,7 @@ esphome:
     - SPI
     - M5PM1=git+https://github.com/m5stack/M5PM1.git#1.0.6
     - m5stack/M5Unified@^0.2.7
-    - m5stack/M5GFX@^0.2.16
+    - m5stack/M5GFX@^0.2.18
   platformio_options:
     board_build.arduino.memory_type: qio_opi
     build_flags:
@@ -201,6 +201,8 @@ microphone:
     i2s_din_pin: GPIO14
     sample_rate: 16000
     bits_per_sample: 16bit
+    mclk_multiple: 256
+    use_apll: true
     channel: left
 
 voice_assistant:

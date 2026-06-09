@@ -158,6 +158,7 @@ void M5StickS3Power::play_beep() {
   M5.Speaker.tone(2400, 110);
   delay(150);
   M5.Speaker.stop();
+  M5.Speaker.end();
 }
 
 void M5StickS3Power::publish_ext_5v_state_() {
