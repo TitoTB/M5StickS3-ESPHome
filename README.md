@@ -18,10 +18,8 @@ Audio, reproductor multimedia y asistente de voz quedan fuera de esta v1 para ma
 
 ## Uso
 
-1. Publica este repositorio en GitHub.
-2. Edita `external_components_url` en `stick-s3.yaml` con la URL real del repositorio.
-3. Copia `stick-s3.yaml` en ESPHome Builder.
-4. Define estos secretos en ESPHome:
+1. Copia `stick-s3.yaml` en ESPHome Builder.
+2. Define estos secretos en ESPHome:
 
 ```yaml
 wifi_ssid: "..."
