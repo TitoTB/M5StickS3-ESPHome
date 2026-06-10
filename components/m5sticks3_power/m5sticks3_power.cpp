@@ -11,7 +11,6 @@ static constexpr uint8_t M5STICKS3_PMIC_ADDRESS = 0x6E;
 bool M5StickS3Power::init_pmic_() {
   ESP_LOGI(TAG, "Initializing PMIC with M5PM1/Wire");
 
-  Wire.end();
   Wire.begin(M5STICKS3_I2C_SDA, M5STICKS3_I2C_SCL, 100000U);
   delay(20);
 
@@ -50,6 +49,25 @@ bool M5StickS3Power::init_pmic_() {
   return true;
 }
 
+bool M5StickS3Power::resync_pmic_() {
+  Wire.end();
+  delay(20);
+  Wire.begin(M5STICKS3_I2C_SDA, M5STICKS3_I2C_SCL, 100000U);
+  delay(20);
+
+  const m5pm1_err_t err =
+      this->pm1_.begin(&Wire, M5STICKS3_PMIC_ADDRESS, M5STICKS3_I2C_SDA, M5STICKS3_I2C_SCL, M5PM1_I2C_FREQ_100K);
+  if (err != M5PM1_OK) {
+    ESP_LOGE(TAG, "PMIC re-init failed: %d", err);
+    this->pmic_ready_ = false;
+    return false;
+  }
+
+  this->pmic_ready_ = true;
+  delay(50);
+  return true;
+}
+
 bool M5StickS3Power::configure_audio_amp_() {
   if (this->pm1_.gpioSetFunc(M5PM1_GPIO_NUM_3, M5PM1_GPIO_FUNC_GPIO) != M5PM1_OK) {
     return false;
@@ -80,12 +98,11 @@ float M5StickS3Power::estimate_battery_level_(uint16_t battery_mv) {
 void M5StickS3Power::setup() {
   this->init_pmic_();
   this->publish_ext_5v_state_();
-  this->set_timeout(5000, [this]() { this->update(); });
 }
 
 void M5StickS3Power::update() {
-  if (!this->pmic_ready_ && !this->init_pmic_()) {
-    ESP_LOGW(TAG, "Skipping PMIC sensor update");
+  if (!this->resync_pmic_()) {
+    ESP_LOGW(TAG, "Skipping PMIC sensor update: re-sync failed");
     return;
   }
 
@@ -96,37 +113,44 @@ void M5StickS3Power::update() {
     return;
   }
 
-  uint16_t battery_mv = 0;
   uint16_t input_mv = 0;
   uint16_t five_volt_mv = 0;
   bool input_valid = false;
 
-  if (this->pm1_.readVbat(&battery_mv) == M5PM1_OK) {
-    if (this->battery_voltage_sensor_ != nullptr) {
-      this->battery_voltage_sensor_->publish_state(battery_mv / 1000.0f);
+  if (this->battery_voltage_sensor_ != nullptr || this->battery_level_sensor_ != nullptr) {
+    uint16_t battery_mv = 0;
+    this->pm1_.readVbat(&battery_mv);
+    delay(20);
+    const m5pm1_err_t err = this->pm1_.readVbat(&battery_mv);
+    if (err == M5PM1_OK) {
+      if (this->battery_voltage_sensor_ != nullptr) {
+        this->battery_voltage_sensor_->publish_state(battery_mv / 1000.0f);
+      }
+      if (this->battery_level_sensor_ != nullptr) {
+        this->battery_level_sensor_->publish_state(this->estimate_battery_level_(battery_mv));
+      }
+    } else {
+      ESP_LOGW(TAG, "readVbat failed after re-sync: err=%d", err);
     }
-    if (this->battery_level_sensor_ != nullptr) {
-      this->battery_level_sensor_->publish_state(this->estimate_battery_level_(battery_mv));
-    }
-  } else {
-    ESP_LOGW(TAG, "readVbat failed");
   }
 
-  if (this->pm1_.readVin(&input_mv) == M5PM1_OK) {
-    input_valid = true;
-    if (this->input_voltage_sensor_ != nullptr) {
-      this->input_voltage_sensor_->publish_state(input_mv / 1000.0f);
+  if (this->input_voltage_sensor_ != nullptr || this->charging_binary_sensor_ != nullptr) {
+    if (this->pm1_.readVin(&input_mv) == M5PM1_OK) {
+      input_valid = true;
+      if (this->input_voltage_sensor_ != nullptr) {
+        this->input_voltage_sensor_->publish_state(input_mv / 1000.0f);
+      }
+    } else {
+      ESP_LOGW(TAG, "readVin failed");
     }
-  } else {
-    ESP_LOGW(TAG, "readVin failed");
   }
 
-  if (this->pm1_.read5VInOut(&five_volt_mv) == M5PM1_OK) {
-    if (this->five_volt_voltage_sensor_ != nullptr) {
+  if (this->five_volt_voltage_sensor_ != nullptr) {
+    if (this->pm1_.read5VInOut(&five_volt_mv) == M5PM1_OK) {
       this->five_volt_voltage_sensor_->publish_state(five_volt_mv / 1000.0f);
+    } else {
+      ESP_LOGW(TAG, "read5VInOut failed");
     }
-  } else {
-    ESP_LOGW(TAG, "read5VInOut failed");
   }
 
   if (this->charging_binary_sensor_ != nullptr) {
@@ -136,6 +160,11 @@ void M5StickS3Power::update() {
   this->publish_ext_5v_state_();
 }
 
+/*
+  M5PM1 can leave its I2C/ADC read path asleep. Sensor reads use a bus re-sync
+  and one throwaway read before publishing the real value, matching the proven
+  StickS3 power component pattern.
+*/
 void M5StickS3Power::set_ext_5v(bool state) {
   if (!this->pmic_ready_ && !this->init_pmic_()) {
     return;

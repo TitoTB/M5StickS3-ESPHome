@@ -51,6 +51,7 @@ class M5StickS3Power : public PollingComponent {
 
  protected:
   bool init_pmic_();
+  bool resync_pmic_();
   void publish_ext_5v_state_();
   float estimate_battery_level_(uint16_t battery_mv);
   bool configure_audio_amp_();
