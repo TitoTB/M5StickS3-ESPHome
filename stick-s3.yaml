@@ -122,6 +122,12 @@ color:
   - id: color_red
     hex: "D04040"
 
+image:
+  - file: "icon.png"
+    id: habbit_icon
+    type: RGB565
+    resize: 74x74
+
 display:
   - platform: m5sticks3_display
     id: stick_display
@@ -129,17 +135,17 @@ display:
     lambda: |-
       it.fill(esphome::Color(0, 0, 0));
 
+      it.image(14, 30, id(habbit_icon));
+
       auto now = id(ha_time).now();
       if (now.is_valid()) {
-        it.strftime(120, 16, id(font_small), id(color_gray), TextAlign::CENTER, "%d/%m/%Y", now);
-        it.strftime(120, 55, id(font_large), id(color_white), TextAlign::CENTER, "%H:%M", now);
+        it.strftime(155, 18, id(font_small), id(color_gray), TextAlign::CENTER, "%d/%m/%Y", now);
+        it.strftime(155, 55, id(font_large), id(color_white), TextAlign::CENTER, "%H:%M", now);
       } else {
-        it.print(120, 45, id(font_medium), id(color_white), TextAlign::CENTER, "Sin hora");
+        it.print(155, 45, id(font_medium), id(color_white), TextAlign::CENTER, "Sin hora");
       }
 
-      it.print(120, 96, id(font_medium), id(color_green), TextAlign::CENTER, "Hola Home Assistant");
-
-      it.print(120, 126, id(font_medium), id(color_gray), TextAlign::CENTER, "Asistente listo");
+      it.print(155, 100, id(font_medium), id(color_green), TextAlign::CENTER, "Habbit Pocket");
 
 m5sticks3_power:
   id: stick_power
