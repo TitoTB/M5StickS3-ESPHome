@@ -13,7 +13,7 @@ esphome:
         - light.turn_on:
             id: backlight
             brightness: 30%
-        - delay: 5s
+        - delay: 20s
         - component.update: stick_power
         - lambda: |-
             M5.Speaker.end();
@@ -177,7 +177,10 @@ binary_sensor:
         - delay: 800ms
         - if:
             condition:
-              binary_sensor.is_on: key1
+              and:
+                - binary_sensor.is_on: key1
+                - lambda: |-
+                    return !id(assistant_active);
             then:
               - lambda: |-
                   id(stick_power).play_beep();
@@ -202,6 +205,12 @@ microphone:
     sample_rate: 16000
     buffer_duration: 40ms
 
+globals:
+  - id: assistant_active
+    type: bool
+    restore_value: no
+    initial_value: "false"
+
 voice_assistant:
   id: va
   microphone:
@@ -209,6 +218,8 @@ voice_assistant:
     channels: 0
     gain_factor: 2
   on_start:
+    - lambda: |-
+        id(assistant_active) = true;
     - logger.log: "Asistente de voz iniciado"
   on_listening:
     - logger.log: "Escuchando"
@@ -217,4 +228,6 @@ voice_assistant:
     - lambda: |-
         id(stick_power).play_beep();
   on_end:
+    - lambda: |-
+        id(assistant_active) = false;
     - logger.log: "Asistente de voz finalizado"

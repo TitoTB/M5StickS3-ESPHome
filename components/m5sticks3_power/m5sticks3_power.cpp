@@ -33,11 +33,9 @@ bool M5StickS3Power::init_pmic_() {
   this->boost_enabled_ = false;
   delay(20);
 
-  // PYG2_L3B_EN controls the StickS3 LCD/audio rail. Low output enables it.
-  this->pm1_.gpioSetFunc(M5PM1_GPIO_NUM_2, M5PM1_GPIO_FUNC_GPIO);
-  this->pm1_.gpioSetMode(M5PM1_GPIO_NUM_2, M5PM1_GPIO_MODE_OUTPUT);
-  this->pm1_.gpioSetDrive(M5PM1_GPIO_NUM_2, M5PM1_GPIO_DRIVE_PUSHPULL);
-  this->pm1_.gpioSetOutput(M5PM1_GPIO_NUM_2, false);
+  if (!this->configure_lcd_audio_rail_()) {
+    ESP_LOGW(TAG, "LCD/audio rail configuration failed");
+  }
   delay(100);
 
   if (!this->configure_audio_amp_()) {
@@ -64,8 +62,28 @@ bool M5StickS3Power::resync_pmic_() {
   }
 
   this->pmic_ready_ = true;
+  if (!this->configure_lcd_audio_rail_()) {
+    ESP_LOGW(TAG, "LCD/audio rail reconfiguration failed");
+  }
+  if (!this->configure_audio_amp_()) {
+    ESP_LOGW(TAG, "Audio amplifier reconfiguration failed");
+  }
   delay(50);
   return true;
+}
+
+bool M5StickS3Power::configure_lcd_audio_rail_() {
+  // PYG2_L3B_EN controls the StickS3 LCD/audio rail. Low output enables it.
+  if (this->pm1_.gpioSetFunc(M5PM1_GPIO_NUM_2, M5PM1_GPIO_FUNC_GPIO) != M5PM1_OK) {
+    return false;
+  }
+  if (this->pm1_.gpioSetMode(M5PM1_GPIO_NUM_2, M5PM1_GPIO_MODE_OUTPUT) != M5PM1_OK) {
+    return false;
+  }
+  if (this->pm1_.gpioSetDrive(M5PM1_GPIO_NUM_2, M5PM1_GPIO_DRIVE_PUSHPULL) != M5PM1_OK) {
+    return false;
+  }
+  return this->pm1_.gpioSetOutput(M5PM1_GPIO_NUM_2, false) == M5PM1_OK;
 }
 
 bool M5StickS3Power::configure_audio_amp_() {
@@ -183,10 +201,8 @@ void M5StickS3Power::play_beep() {
   ESP_LOGI(TAG, "Playing confirmation beep");
   M5.Speaker.begin();
   M5.Speaker.setVolume(150);
-  M5.Speaker.tone(1800, 80);
+  M5.Speaker.tone(2200, 90);
   delay(120);
-  M5.Speaker.tone(2400, 110);
-  delay(150);
   M5.Speaker.stop();
   M5.Speaker.end();
 }
