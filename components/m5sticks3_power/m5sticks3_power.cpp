@@ -80,6 +80,7 @@ float M5StickS3Power::estimate_battery_level_(uint16_t battery_mv) {
 void M5StickS3Power::setup() {
   this->init_pmic_();
   this->publish_ext_5v_state_();
+  this->set_timeout(5000, [this]() { this->update(); });
 }
 
 void M5StickS3Power::update() {
