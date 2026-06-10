@@ -156,6 +156,7 @@ void M5StickS3Power::set_ext_5v(bool state) {
 void M5StickS3Power::play_beep() {
   ESP_LOGI(TAG, "Playing confirmation beep");
   M5.Speaker.begin();
+  delay(50);
   M5.Speaker.setVolume(150);
   M5.Speaker.tone(1800, 80);
   delay(120);
