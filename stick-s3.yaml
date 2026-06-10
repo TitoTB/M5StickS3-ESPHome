@@ -13,6 +13,8 @@ esphome:
         - light.turn_on:
             id: backlight
             brightness: 30%
+        - delay: 5s
+        - component.update: stick_power
         - lambda: |-
             M5.Speaker.end();
   libraries:
