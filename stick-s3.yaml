@@ -13,8 +13,6 @@ esphome:
         - light.turn_on:
             id: backlight
             brightness: 30%
-        - delay: 20s
-        - component.update: stick_power
         - lambda: |-
             M5.Speaker.end();
   libraries:
@@ -141,21 +139,11 @@ display:
 
       it.print(120, 96, id(font_medium), id(color_green), TextAlign::CENTER, "Hola Home Assistant");
 
-      if (!isnan(id(battery_level).state)) {
-        it.printf(232, 6, id(font_small), id(color_gray), TextAlign::TOP_RIGHT, "%.0f%%", id(battery_level).state);
-      }
-
       it.print(120, 126, id(font_medium), id(color_gray), TextAlign::CENTER, "Asistente listo");
 
 m5sticks3_power:
   id: stick_power
-  update_interval: 30min
-  battery_level:
-    id: battery_level
-    name: "Bateria"
-  battery_voltage:
-    id: battery_voltage
-    name: "Voltaje bateria"
+  update_interval: 5min
   beep:
     name: "Bip de confirmacion"
 
