@@ -25,6 +25,10 @@ void M5StickS3Microphone::start() {
   if (this->state_ == microphone::STATE_RUNNING || this->state_ == microphone::STATE_STARTING) {
     return;
   }
+  if (this->task_handle_ != nullptr) {
+    ESP_LOGW(TAG, "Microphone task is still active; ignoring start request");
+    return;
+  }
 
   ESP_LOGI(TAG, "Starting M5.Mic capture");
   this->state_ = microphone::STATE_STARTING;
@@ -32,6 +36,8 @@ void M5StickS3Microphone::start() {
 
   // StickS3 audio cannot use speaker and microphone at the same time.
   M5.Speaker.end();
+  M5.Mic.end();
+  delay(50);
 
   if (!M5.Mic.begin()) {
     ESP_LOGE(TAG, "M5.Mic.begin() failed");
@@ -41,8 +47,8 @@ void M5StickS3Microphone::start() {
   }
 
   this->status_clear_error();
-  const BaseType_t result = xTaskCreatePinnedToCore(
-      M5StickS3Microphone::mic_task, "m5sticks3_mic", 4096, this, 5, &this->task_handle_, 1);
+  const BaseType_t result = xTaskCreate(
+      M5StickS3Microphone::mic_task, "m5sticks3_mic", 6144, this, 1, &this->task_handle_);
   if (result != pdPASS) {
     ESP_LOGE(TAG, "Failed to create microphone task");
     M5.Mic.end();
@@ -53,6 +59,7 @@ void M5StickS3Microphone::start() {
   }
 
   this->state_ = microphone::STATE_RUNNING;
+  ESP_LOGI(TAG, "M5.Mic capture started");
 }
 
 void M5StickS3Microphone::stop() {
@@ -84,6 +91,7 @@ void M5StickS3Microphone::run_() {
 
     std::memcpy(bytes.data(), samples.data(), bytes.size());
     this->data_callbacks_.call(bytes);
+    vTaskDelay(1);
   }
 
   M5.Mic.end();
