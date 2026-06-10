@@ -8,12 +8,12 @@ Esta v1 incluye:
 
 - Pantalla M5StickS3 mediante componente ESPHome propio.
 - Gestion basica de energia mediante M5PM1.
-- Bateria estimada, voltaje de bateria, voltaje de entrada USB, rail 5V, estado de carga y salida EXT 5V.
+- Bateria estimada y voltaje de bateria con lectura lenta cada 30 minutos.
 - Boton azul y boton lateral.
 - Retroiluminacion de pantalla.
 - Bip de confirmacion mediante el altavoz interno.
 - Microfono mediante componente propio M5Unified/M5.Mic para asistente de voz nativo de Home Assistant.
-- Asistente activado con pulsacion larga del boton azul, con bip al empezar a escuchar y bip al ejecutar el comando.
+- Asistente activado al mantener pulsado el boton azul 800 ms, con bip al empezar a escuchar y bip al ejecutar el comando.
 
 IR queda fuera de esta v1 para evitar ruido de recepcion y mantener la configuracion estable.
 

@@ -139,11 +139,21 @@ display:
 
       it.print(120, 96, id(font_medium), id(color_green), TextAlign::CENTER, "Hola Home Assistant");
 
+      if (!isnan(id(battery_level).state)) {
+        it.printf(232, 6, id(font_small), id(color_gray), TextAlign::TOP_RIGHT, "%.0f%%", id(battery_level).state);
+      }
+
       it.print(120, 126, id(font_medium), id(color_gray), TextAlign::CENTER, "Asistente listo");
 
 m5sticks3_power:
   id: stick_power
-  update_interval: 5min
+  update_interval: 30min
+  battery_level:
+    id: battery_level
+    name: "Bateria"
+  battery_voltage:
+    id: battery_voltage
+    name: "Voltaje bateria"
   beep:
     name: "Bip de confirmacion"
 
@@ -160,14 +170,16 @@ binary_sensor:
     filters:
       - delayed_on: 10ms
       - delayed_off: 10ms
-    on_multi_click:
-      - timing:
-          - ON for at least 800ms
-          - OFF for at least 50ms
-        then:
-          - lambda: |-
-              id(stick_power).play_beep();
-          - voice_assistant.start:
+    on_press:
+      then:
+        - delay: 800ms
+        - if:
+            condition:
+              binary_sensor.is_on: key1
+            then:
+              - lambda: |-
+                  id(stick_power).play_beep();
+              - voice_assistant.start:
 
   - platform: gpio
     id: key2
