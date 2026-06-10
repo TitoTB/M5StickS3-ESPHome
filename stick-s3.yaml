@@ -1,6 +1,42 @@
 substitutions:
+
+# Device customization
+# Personalización del dispositivo
+
   name: stick-s3
   friendly_name: Stick S3
+
+  idle_time: 20s
+
+  icon: https://raw.githubusercontent.com/TitoTB/M5StickS3-ESPHome/refs/heads/main/icon.png
+
+# Controlable devices
+# Dispositivos controlables
+
+  devices_count: "4"
+
+  device_0_entity: "light.ventilador_estudio"
+  device_0_service: "light.toggle"
+  device_0_icon: "mdi:ceiling-light"
+
+  device_1_entity: "fan.ventilador_estudio"
+  device_1_service: "fan.toggle"
+  device_1_icon: "mdi:ceiling-fan"
+
+  device_2_entity: "cover.estor_estudio_1"
+  device_2_service: "cover.toggle"
+  device_2_icon: "mdi:roller-shade"
+
+  device_3_entity: "media_player.smart_tv"
+  device_3_service: "media_player.toggle"
+  device_3_icon: "mdi:television-classic"
+
+# Other settings
+# Otros ajustes
+
+  allowed_characters: " []¿?¡!#%'()+,-—_./:µ³°ªº0123456789ABCDEFGHIJKLMNÑOPQRSTUVWXYZabcdefghijklmnñopqrstuvwxyzáéíóúÁÉÍÓÚäëïöü"
+
+################################################################################################################
 
 esphome:
   name: ${name}
@@ -64,8 +100,6 @@ logger:
   level: DEBUG
   baud_rate: 0
 
-captive_portal:
-
 web_server:
   port: 80
 
@@ -79,79 +113,9 @@ external_components:
       - m5sticks3_display
       - m5sticks3_microphone
       - m5sticks3_power
-    # Temporal durante el desarrollo: volver a 1days cuando la base compile estable.
-    refresh: 0s
+    refresh: 1days
 
-time:
-  - platform: homeassistant
-    id: ha_time
-
-output:
-  - platform: ledc
-    pin: GPIO38
-    id: lcd_backlight_raw
-    frequency: 1000Hz
-
-light:
-  - platform: monochromatic
-    id: backlight
-    name: "Pantalla"
-    icon: mdi:cellphone
-    output: lcd_backlight_raw
-    restore_mode: ALWAYS_ON
-    default_transition_length: 0s
-
-font:
-  - file: "gfonts://Roboto"
-    id: font_small
-    size: 14
-  - file: "gfonts://Roboto"
-    id: font_medium
-    size: 20
-  - file: "gfonts://Roboto"
-    id: font_large
-    size: 34
-
-color:
-  - id: color_white
-    hex: "FFFFFF"
-  - id: color_gray
-    hex: "808080"
-  - id: color_green
-    hex: "40D060"
-  - id: color_red
-    hex: "D04040"
-
-image:
-  - file: "icon.png"
-    id: habbit_icon
-    type: RGB565
-    resize: 74x74
-
-display:
-  - platform: m5sticks3_display
-    id: stick_display
-    update_interval: 1s
-    lambda: |-
-      it.fill(esphome::Color(0, 0, 0));
-
-      it.image(14, 30, id(habbit_icon));
-
-      auto now = id(ha_time).now();
-      if (now.is_valid()) {
-        it.strftime(155, 18, id(font_small), id(color_gray), TextAlign::CENTER, "%d/%m/%Y", now);
-        it.strftime(155, 55, id(font_large), id(color_white), TextAlign::CENTER, "%H:%M", now);
-      } else {
-        it.print(155, 45, id(font_medium), id(color_white), TextAlign::CENTER, "Sin hora");
-      }
-
-      it.print(155, 100, id(font_medium), id(color_green), TextAlign::CENTER, "Habbit Pocket");
-
-m5sticks3_power:
-  id: stick_power
-  update_interval: 5min
-  beep:
-    name: "Bip de confirmacion"
+captive_portal:
 
 binary_sensor:
   - platform: gpio
@@ -166,19 +130,68 @@ binary_sensor:
     filters:
       - delayed_on: 10ms
       - delayed_off: 10ms
+
+    on_multi_click:
+      - timing:
+          - ON for at most 350ms
+          - OFF for at most 350ms
+          - ON for at most 350ms
+          - OFF for at least 50ms
+        then:
+          - if:
+              condition: lvgl.is_paused
+              then:
+                - lvgl.resume:
+                - delay: 50ms
+                - light.turn_on:
+                    id: backlight
+                - lvgl.page.show: page_home
+                - lvgl.widget.redraw:
+                - lambda: |-
+                    id(current_page) = 0;
+                    id(key1_long_press_fired) = false;
+
     on_press:
       then:
-        - delay: 800ms
+        - if:
+            condition:
+              not:
+                lvgl.is_paused:
+            then:
+              - lvgl.resume:
+              - lambda: |-
+                  id(key1_long_press_fired) = false;
+              - delay: 800ms
+              - if:
+                  condition:
+                    and:
+                      - binary_sensor.is_on: key1
+                      - not:
+                          lvgl.is_paused:
+                      - lambda: |-
+                          return !id(assistant_active);
+                  then:
+                    - lambda: |-
+                        id(key1_long_press_fired) = true;
+                    - lvgl.page.show: page_assist
+                    - lambda: |-
+                        id(stick_power).play_beep();
+                    - voice_assistant.start:
+    on_release:
+      then:
         - if:
             condition:
               and:
-                - binary_sensor.is_on: key1
+                - not:
+                    lvgl.is_paused:
+                - lambda: |-
+                    return !id(key1_long_press_fired);
+                - lambda: |-
+                    return id(current_page) == 1;
                 - lambda: |-
                     return !id(assistant_active);
             then:
-              - lambda: |-
-                  id(stick_power).play_beep();
-              - voice_assistant.start:
+              - script.execute: toggle_selected_device
 
   - platform: gpio
     id: key2
@@ -192,6 +205,136 @@ binary_sensor:
     filters:
       - delayed_on: 10ms
       - delayed_off: 10ms
+    on_press:
+      then:
+        - lvgl.resume:
+        - if:
+            condition:
+              lambda: 'return id(current_page) == 0;'
+            then:
+              - lambda: 'id(current_page) = 1;'
+              - lvgl.page.show: page_devices
+              - script.execute: render_device_menu
+            else:
+              - lambda: |-
+                  id(selected_device) = (id(selected_device) + 1) % id(device_count);
+              - script.execute: render_device_menu
+    on_double_click: 
+      then:
+        - lvgl.page.show: page_home
+        - lambda: 'id(current_page) = 0;'
+
+font:
+  - file: "gfonts://Figtree"
+    id: font_date
+    size: 18
+    glyphs: ${allowed_characters}
+  - file: "gfonts://Figtree"
+    id: font_clock
+    size: 30
+    glyphs: ${allowed_characters}
+  - file: "gfonts://Kanit"
+    id: font_title
+    size: 16
+    glyphs: ${allowed_characters}
+
+globals:
+  - id: assistant_active
+    type: bool
+    restore_value: no
+    initial_value: "false"
+  - id: key1_long_press_fired
+    type: bool
+    restore_value: no
+    initial_value: "false"
+  - id: current_page
+    type: int
+    initial_value: "0"  # 0 home, 1 devices
+  - id: selected_device
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: device_count
+    type: int
+    restore_value: no
+    initial_value: ${devices_count}
+
+image:
+  - file: ${icon}
+    id: icon_main
+    type: RGB565
+    resize: 135x135
+    transparency: alpha_channel
+
+  - file: mdi:microphone
+    id: icon_assist_active
+    resize: 135x135
+    type: BINARY
+    transparency: chroma_key
+
+  - file: ${device_0_icon}
+    id: icon_device_0
+    resize: 100x100
+    type: BINARY
+    transparency: chroma_key
+  - file: ${device_0_icon}
+    id: icon_device_0_mini
+    resize: 50x50
+    type: BINARY
+    transparency: chroma_key
+  - file: ${device_1_icon}
+    id: icon_device_1
+    resize: 100x100
+    type: BINARY
+    transparency: chroma_key
+  - file: ${device_1_icon}
+    id: icon_device_1_mini
+    resize: 50x50
+    type: BINARY
+    transparency: chroma_key
+  - file: ${device_2_icon}
+    id: icon_device_2
+    resize: 100x100
+    type: BINARY
+    transparency: chroma_key
+  - file: ${device_2_icon}
+    id: icon_device_2_mini
+    resize: 50x50
+    type: BINARY
+    transparency: chroma_key
+  - file: ${device_3_icon}
+    id: icon_device_3
+    resize: 100x100
+    type: BINARY
+    transparency: chroma_key
+  - file: ${device_3_icon}
+    id: icon_device_3_mini
+    resize: 50x50
+    type: BINARY
+    transparency: chroma_key
+
+interval:
+  - interval: 60s
+    then:
+      - lvgl.label.update:
+          id: lbl_clock
+          text: !lambda 'return id(esptime).now().strftime("%H:%M");'
+
+light:
+  - platform: monochromatic
+    id: backlight
+    name: "Pantalla"
+    icon: mdi:cellphone
+    output: lcd_backlight_raw
+    restore_mode: ALWAYS_ON
+    default_transition_length: 0s
+
+m5sticks3_power:
+  id: stick_power
+  update_interval: 5min
+  beep:
+    name: "Bip de confirmacion"
+    internal: true
 
 microphone:
   - platform: m5sticks3_microphone
@@ -199,11 +342,125 @@ microphone:
     sample_rate: 16000
     buffer_duration: 40ms
 
-globals:
-  - id: assistant_active
-    type: bool
-    restore_value: no
-    initial_value: "false"
+output:
+  - platform: ledc
+    pin: GPIO38
+    id: lcd_backlight_raw
+    frequency: 1000Hz
+
+script:
+  - id: render_device_menu
+    then:
+      - if:
+          condition:
+            lambda: 'return id(selected_device) == 0;'
+          then:
+            - lvgl.image.update:
+                id: lbl_device_prev
+                src: icon_device_3_mini
+            - lvgl.image.update:
+                id: lbl_device_current
+                src: icon_device_0
+            - lvgl.image.update:
+                id: lbl_device_next
+                src: icon_device_1_mini
+
+      - if:
+          condition:
+            lambda: 'return id(selected_device) == 1;'
+          then:
+            - lvgl.image.update:
+                id: lbl_device_prev
+                src: icon_device_0_mini
+            - lvgl.image.update:
+                id: lbl_device_current
+                src: icon_device_1
+            - lvgl.image.update:
+                id: lbl_device_next
+                src: icon_device_2_mini
+
+      - if:
+          condition:
+            lambda: 'return id(selected_device) == 2;'
+          then:
+            - lvgl.image.update:
+                id: lbl_device_prev
+                src: icon_device_1_mini
+            - lvgl.image.update:
+                id: lbl_device_current
+                src: icon_device_2
+            - lvgl.image.update:
+                id: lbl_device_next
+                src: icon_device_3_mini
+
+      - if:
+          condition:
+            lambda: 'return id(selected_device) == 3;'
+          then:
+            - lvgl.image.update:
+                id: lbl_device_prev
+                src: icon_device_2_mini
+            - lvgl.image.update:
+                id: lbl_device_current
+                src: icon_device_3
+            - lvgl.image.update:
+                id: lbl_device_next
+                src: icon_device_0_mini
+
+  - id: toggle_selected_device
+    then:
+      - if:
+          condition:
+            lambda: 'return id(selected_device) == 0;'
+          then:
+            - homeassistant.service:
+                service: ${device_0_service}
+                data:
+                  entity_id: ${device_0_entity}
+      - if:
+          condition:
+            lambda: 'return id(selected_device) == 1;'
+          then:
+            - homeassistant.service:
+                service: ${device_1_service}
+                data:
+                  entity_id: ${device_1_entity}
+      - if:
+          condition:
+            lambda: 'return id(selected_device) == 2;'
+          then:
+            - homeassistant.service:
+                service: ${device_2_service}
+                data:
+                  entity_id: ${device_2_entity}
+      - if:
+          condition:
+            lambda: 'return id(selected_device) == 3;'
+          then:
+            - homeassistant.service:
+                service: ${device_3_service}
+                data:
+                  entity_id: ${device_3_entity}
+
+time:
+  - platform: homeassistant
+    id: esptime
+    on_time:
+      - seconds: 0
+        minutes: 0
+        hours: 0
+        then:
+          - lvgl.label.update:
+              id: lbl_date
+              text: !lambda 'return id(esptime).now().strftime("%d/%m/%y");'
+    on_time_sync:
+      then:
+        - lvgl.label.update:
+            id: lbl_clock
+            text: !lambda 'return id(esptime).now().strftime("%H:%M");'
+        - lvgl.label.update:
+            id: lbl_date
+            text: !lambda 'return id(esptime).now().strftime("%d/%m/%y");'
 
 voice_assistant:
   id: va
@@ -224,4 +481,97 @@ voice_assistant:
   on_end:
     - lambda: |-
         id(assistant_active) = false;
+        id(current_page) = 0;
     - logger.log: "Asistente de voz finalizado"
+    - lvgl.page.show: page_home
+
+display:
+  - platform: m5sticks3_display
+    id: stick_display    
+
+lvgl:
+  rotation: 270
+  displays:
+    - stick_display
+  on_idle:
+    - timeout: ${idle_time}
+      then:
+        - lvgl.page.show: page_home
+        - lambda: |-
+            id(current_page) = 0;
+        - lvgl.widget.redraw:
+        - delay: 50ms
+        - light.turn_off:
+            id: backlight
+        - lvgl.pause:
+
+  pages:
+    - id: page_home
+      bg_color: 0x000000
+      widgets:
+        - label:
+            id: lbl_date
+            y: 10
+            align: TOP_MID
+            text: "00/00/26"
+            text_color: 0x8A8A8A
+            text_font: font_date
+
+        - label:
+            id: lbl_clock
+            y: 28
+            align: TOP_MID
+            text: "00:00"
+            text_color: 0xFFFFFF
+            text_font: font_clock
+
+        - image:
+            src: icon_main
+            y: 10
+            align: CENTER
+
+        - label:
+            id: lbl_title
+            y: -15
+            align: BOTTOM_MID
+            text: "Habbit Pocket"
+            text_color: 0xbde530
+            text_font: font_title
+
+    - id: page_assist
+      bg_color: 0x00d2ff
+      widgets:
+        - image:
+            id: lbl_assist_icon
+            align: CENTER
+            src: icon_assist_active
+            image_recolor: 0xffffff
+            image_recolor_opa: COVER
+
+    - id: page_devices
+      bg_color: 0x000000
+      widgets:
+        - image:
+            id: lbl_device_prev
+            y: 10
+            align: TOP_MID
+            src: icon_device_3_mini
+            image_recolor: 0xffffff
+            image_recolor_opa: COVER
+            opa: 50%
+
+        - image:
+            id: lbl_device_current
+            align: CENTER
+            src: icon_device_0
+            image_recolor: 0xffffff
+            image_recolor_opa: COVER
+
+        - image:
+            id: lbl_device_next
+            y: -10
+            align: BOTTOM_MID
+            src: icon_device_1_mini
+            image_recolor: 0xffffff
+            image_recolor_opa: COVER
+            opa: 50%
