@@ -1,6 +1,6 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import audio, microphone
+from esphome.components import microphone
 from esphome.const import CONF_ID, CONF_SAMPLE_RATE
 
 DEPENDENCIES = ["esp32"]
@@ -12,23 +12,13 @@ M5StickS3Microphone = m5sticks3_microphone_ns.class_(
 
 CONF_BUFFER_DURATION = "buffer_duration"
 
-CONFIG_SCHEMA = cv.All(
-    microphone.MICROPHONE_SCHEMA.extend(
-        {
-            cv.GenerateID(): cv.declare_id(M5StickS3Microphone),
-            cv.Optional(CONF_SAMPLE_RATE, default=16000): cv.int_range(min=8000, max=48000),
-            cv.Optional(CONF_BUFFER_DURATION, default="20ms"): cv.positive_time_period_milliseconds,
-        }
-    ).extend(cv.COMPONENT_SCHEMA),
-    audio.set_stream_limits(
-        min_bits_per_sample=16,
-        max_bits_per_sample=16,
-        min_channels=1,
-        max_channels=1,
-        min_sample_rate=16000,
-        max_sample_rate=16000,
-    ),
-)
+CONFIG_SCHEMA = microphone.MICROPHONE_SCHEMA.extend(
+    {
+        cv.GenerateID(): cv.declare_id(M5StickS3Microphone),
+        cv.Optional(CONF_SAMPLE_RATE, default=16000): cv.int_range(min=8000, max=48000),
+        cv.Optional(CONF_BUFFER_DURATION, default="20ms"): cv.positive_time_period_milliseconds,
+    }
+).extend(cv.COMPONENT_SCHEMA)
 
 
 async def to_code(config):
