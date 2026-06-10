@@ -1,109 +1,77 @@
-# M5StickS3 ESPHome
+# Habbit Pocket
 
-ESPHome integration for the M5Stack StickS3 ESP32-S3 Mini IoT Dev Kit, designed for Home Assistant.
+## M5Stick + ESPHome
 
-This project provides a working baseline firmware with custom ESPHome components for the parts of the StickS3 that are not covered well enough by native ESPHome components.
+**Habbit Pocket** turns the M5StickS3 into a small, customizable pocket controller for Home Assistant.
 
-## Current Status
+It uses ESPHome plus a few custom components to provide a compact interface for controlling any Home Assistant device, either manually from an on-screen device menu or by voice through the native Home Assistant Assist pipeline.
 
-This version includes:
+## What It Does
 
-- M5StickS3 display support through a custom ESPHome component.
-- LVGL interface with a home screen and a device menu.
-- Screen backlight exposed as a Home Assistant light entity.
-- Blue button and side button exposed as GPIO binary sensors.
-- Internal confirmation beep through the StickS3 speaker.
-- Microphone support through a custom M5Unified / `M5.Mic` ESPHome component.
-- Native Home Assistant voice assistant support.
-- Voice assistant activation with a long press on the blue button.
-- Confirmation beep when the assistant starts listening.
-- Confirmation beep when a command is executed.
-- Device menu navigation from the side button.
-- Device toggle from the blue button while the device menu is open.
-- Screen sleep with backlight off.
-- Double-click wake gesture on the blue button.
+Habbit Pocket gives you two main ways to interact with your smart home:
 
-IR reception, battery readings, and media-player audio playback are intentionally not enabled in this stable baseline. They were left out to keep the display, buttons, beep, LVGL interface, and native Home Assistant assistant flow reliable.
+- **Manual control** through a simple on-device menu.
+- **Voice control** through the Home Assistant voice assistant.
+
+The goal is to keep the device fast, minimal, and pocket-friendly: wake it only when you need it, choose a device, toggle it, or speak a command.
 
 ## How It Works
 
-The firmware uses:
+- Double-click the center button to wake the screen.
+- Long-press the center button to start the voice assistant.
+- Press the side button to open the device menu.
+- In the device menu, press the side button to move between devices.
+- In the device menu, double-click the side button to return to the home screen.
+- In the device menu, press the center button to toggle the selected device.
+- The screen turns off automatically after a period of inactivity.
 
-- `m5sticks3_display` for the StickS3 screen.
-- `m5sticks3_power` for power-related M5Stack initialization and the internal beep.
-- `m5sticks3_microphone` for microphone capture through M5Unified.
-- ESPHome `voice_assistant` for the native Home Assistant Assist pipeline.
-- ESPHome `lvgl` for the on-device interface.
+## Device Menu
 
-The home screen shows the project icon, date, time, and title.
+The device menu is designed for quick pocket use.
 
-The device menu shows three device icons:
+It shows:
 
-- Previous device at the top.
-- Current device in the center.
-- Next device at the bottom.
+- The previous device at the top.
+- The selected device in the center.
+- The next device at the bottom.
 
-From the device menu:
+You can customize the entities, services, and icons directly from the substitutions section in the ESPHome YAML.
 
-- Press the side button to move to the next device.
-- Short press the blue button to toggle the selected device.
+## Voice Assistant
 
-When the screen is asleep:
+Habbit Pocket uses the native Home Assistant voice assistant.
 
-- A double click on the blue button wakes the screen.
-- Long press actions are ignored so the assistant is not started accidentally.
+When the assistant starts listening, the device plays a short confirmation beep. After the command is executed, it plays another confirmation beep and returns to idle.
 
-## Usage
+## Hardware
 
-1. Copy `stick-s3.yaml` into ESPHome Builder.
-2. Create a new ESPHome device normally so ESPHome can generate your own API, OTA, Wi-Fi, and fallback hotspot values.
-3. Define these ESPHome secrets:
+This project is built for the **M5StickS3 ESP32-S3 Mini IoT Dev Kit**.
 
-```yaml
-wifi_ssid: "your_wifi_name"
-wifi_password: "your_wifi_password"
-```
+- [AliExpress](https://s.click.aliexpress.com/e/_c3UTfFZx)
+- [Amazon](https://amzn.to/4upCY6Y)
+- [M5Stack Store](https://shop.m5stack.com/products/m5sticks3-esp32s3-mini-iot-dev-kit&ref=epuuxemo)
 
-4. Adjust the substitutions at the top of `stick-s3.yaml`:
+## ESPHome Components
 
-```yaml
-name: stick-s3
-friendly_name: Stick S3
-idle_time: 20s
+The project uses custom ESPHome components for the M5StickS3 hardware features that need dedicated support:
 
-devices_count: "4"
+- `m5sticks3_display`
+- `m5sticks3_microphone`
+- `m5sticks3_power`
 
-device_0_entity: "light.example"
-device_0_service: "light.toggle"
-device_0_icon: "mdi:ceiling-light"
-```
+These components are loaded from this repository through ESPHome `external_components`.
 
-5. Replace the example device entities, services, and icons with your own Home Assistant entities.
+## Current Scope
 
-## External Components
+This stable version focuses on:
 
-The YAML loads the custom components from this repository:
+- Display
+- Buttons
+- Backlight
+- LVGL interface
+- Confirmation beep
+- Microphone
+- Native Home Assistant voice assistant
+- Customizable Home Assistant device menu
 
-```yaml
-external_components:
-  - source:
-      type: git
-      url: https://github.com/TitoTB/M5StickS3-ESPHome.git
-      ref: main
-      path: components
-    components:
-      - m5sticks3_display
-      - m5sticks3_microphone
-      - m5sticks3_power
-    refresh: 1days
-```
-
-`refresh: 1days` is the stable setting. During active component development you can temporarily change it to `0s` to force ESPHome to fetch the latest repository version on every compile.
-
-## Notes
-
-- Keep speaker volume and beep usage conservative when running on battery.
-- Battery readings are not part of the stable baseline.
-- IR reception is not part of the stable baseline.
-- Full media-player playback is not part of the stable baseline.
-- The current target is a reliable pocket remote and native Home Assistant voice assistant device.
+Battery readings, IR reception, and full media-player audio playback are intentionally not enabled in this baseline version.
