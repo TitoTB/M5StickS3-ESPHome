@@ -12,13 +12,27 @@ M5StickS3Microphone = m5sticks3_microphone_ns.class_(
 
 CONF_BUFFER_DURATION = "buffer_duration"
 
-CONFIG_SCHEMA = microphone.MICROPHONE_SCHEMA.extend(
-    {
-        cv.GenerateID(): cv.declare_id(M5StickS3Microphone),
-        cv.Optional(CONF_SAMPLE_RATE, default=16000): cv.int_range(min=8000, max=48000),
-        cv.Optional(CONF_BUFFER_DURATION, default="20ms"): cv.positive_time_period_milliseconds,
-    }
-).extend(cv.COMPONENT_SCHEMA)
+
+def set_m5sticks3_audio_limits(config):
+    config["min_bits_per_sample"] = 16
+    config["max_bits_per_sample"] = 16
+    config["min_channels"] = 1
+    config["max_channels"] = 1
+    config["min_sample_rate"] = config[CONF_SAMPLE_RATE]
+    config["max_sample_rate"] = config[CONF_SAMPLE_RATE]
+    return config
+
+
+CONFIG_SCHEMA = cv.All(
+    microphone.MICROPHONE_SCHEMA.extend(
+        {
+            cv.GenerateID(): cv.declare_id(M5StickS3Microphone),
+            cv.Optional(CONF_SAMPLE_RATE, default=16000): cv.int_range(min=8000, max=48000),
+            cv.Optional(CONF_BUFFER_DURATION, default="20ms"): cv.positive_time_period_milliseconds,
+        }
+    ).extend(cv.COMPONENT_SCHEMA),
+    set_m5sticks3_audio_limits,
+)
 
 
 async def to_code(config):
