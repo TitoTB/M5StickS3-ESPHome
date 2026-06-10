@@ -95,7 +95,8 @@ output:
 light:
   - platform: monochromatic
     id: backlight
-    name: "Retroiluminacion pantalla"
+    name: "Pantalla"
+    icon: mdi:cellphone
     output: lcd_backlight_raw
     restore_mode: ALWAYS_ON
     default_transition_length: 0s
@@ -159,6 +160,14 @@ binary_sensor:
     filters:
       - delayed_on: 10ms
       - delayed_off: 10ms
+    on_multi_click:
+      - timing:
+          - ON for at least 800ms
+          - OFF for at least 50ms
+        then:
+          - lambda: |-
+              id(stick_power).play_beep();
+          - voice_assistant.start:
 
   - platform: gpio
     id: key2
@@ -172,21 +181,6 @@ binary_sensor:
     filters:
       - delayed_on: 10ms
       - delayed_off: 10ms
-
-button:
-  - platform: template
-    name: "Iniciar asistente"
-    icon: "mdi:microphone"
-    on_press:
-      - lambda: |-
-          M5.Speaker.end();
-      - voice_assistant.start:
-
-  - platform: template
-    name: "Detener asistente"
-    icon: "mdi:microphone-off"
-    on_press:
-      - voice_assistant.stop:
 
 microphone:
   - platform: m5sticks3_microphone
@@ -204,5 +198,9 @@ voice_assistant:
     - logger.log: "Asistente de voz iniciado"
   on_listening:
     - logger.log: "Escuchando"
+  on_intent_end:
+    - logger.log: "Comando ejecutado"
+    - lambda: |-
+        id(stick_power).play_beep();
   on_end:
     - logger.log: "Asistente de voz finalizado"

@@ -13,6 +13,7 @@ Esta v1 incluye:
 - Retroiluminacion de pantalla.
 - Bip de confirmacion mediante el altavoz interno.
 - Microfono mediante componente propio M5Unified/M5.Mic para asistente de voz nativo de Home Assistant.
+- Asistente activado con pulsacion larga del boton azul, con bip al empezar a escuchar y bip al ejecutar el comando.
 
 IR queda fuera de esta v1 para evitar ruido de recepcion y mantener la configuracion estable.
 
