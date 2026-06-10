@@ -1,5 +1,7 @@
 # Habbit Pocket
 
+![Habbit Pocket](images/Habbit%20Pocket.png)
+
 ## M5Stick + ESPHome
 
 **Habbit Pocket** turns the M5StickS3 into a small, customizable pocket controller for Home Assistant.
