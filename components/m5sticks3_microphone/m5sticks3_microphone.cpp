@@ -42,7 +42,7 @@ void M5StickS3Microphone::start() {
   if (!M5.Mic.begin()) {
     ESP_LOGE(TAG, "M5.Mic.begin() failed");
     this->state_ = microphone::STATE_STOPPED;
-    this->status_set_error("M5.Mic.begin failed");
+    this->status_set_error(LOG_STR("M5.Mic.begin failed"));
     return;
   }
 
@@ -54,7 +54,7 @@ void M5StickS3Microphone::start() {
     M5.Mic.end();
     this->task_handle_ = nullptr;
     this->state_ = microphone::STATE_STOPPED;
-    this->status_set_error("task create failed");
+    this->status_set_error(LOG_STR("task create failed"));
     return;
   }
 
@@ -70,6 +70,14 @@ void M5StickS3Microphone::stop() {
   ESP_LOGI(TAG, "Stopping M5.Mic capture");
   this->state_ = microphone::STATE_STOPPING;
   this->stop_requested_ = true;
+
+  const uint32_t start = millis();
+  while (this->task_handle_ != nullptr && millis() - start < 150) {
+    delay(10);
+  }
+  if (this->task_handle_ != nullptr) {
+    ESP_LOGW(TAG, "Microphone task did not stop within 150 ms");
+  }
 }
 
 void M5StickS3Microphone::mic_task(void *params) {
@@ -97,6 +105,7 @@ void M5StickS3Microphone::run_() {
   M5.Mic.end();
   this->task_handle_ = nullptr;
   this->state_ = microphone::STATE_STOPPED;
+  ESP_LOGI(TAG, "M5.Mic capture stopped");
 }
 
 }  // namespace m5sticks3_microphone

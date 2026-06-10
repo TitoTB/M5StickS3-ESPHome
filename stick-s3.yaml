@@ -192,7 +192,7 @@ microphone:
   - platform: m5sticks3_microphone
     id: internal_microphone
     sample_rate: 16000
-    buffer_duration: 20ms
+    buffer_duration: 40ms
 
 voice_assistant:
   id: va

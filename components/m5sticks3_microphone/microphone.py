@@ -28,7 +28,7 @@ CONFIG_SCHEMA = cv.All(
         {
             cv.GenerateID(): cv.declare_id(M5StickS3Microphone),
             cv.Optional(CONF_SAMPLE_RATE, default=16000): cv.int_range(min=8000, max=48000),
-            cv.Optional(CONF_BUFFER_DURATION, default="20ms"): cv.positive_time_period_milliseconds,
+            cv.Optional(CONF_BUFFER_DURATION, default="40ms"): cv.positive_time_period_milliseconds,
         }
     ).extend(cv.COMPONENT_SCHEMA),
     set_m5sticks3_audio_limits,
